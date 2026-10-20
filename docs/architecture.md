@@ -1,163 +1,219 @@
 # Architecture and interaction design
 
-This is a proposed design, not a description of implemented APIs. The
-[README](../README.md) defines the project requirements;
-[the latency baseline](latency-baseline.md) explains the problems this design
-must address.
+This is a design supporting the [product specification](specification.md), not
+a description of implemented APIs. The specification owns feature promises and
+acceptance criteria; the [ability contract](ability-contract.md) owns the game
+authorization boundary. [Open decisions](open-decisions.md) records unqualified
+mechanisms and candidate defaults. Nothing here sequences delivery milestones.
 
-## Responsibilities
+## Responsibilities and authority
 
-| Component | Responsibility |
+| Component | Responsibility | Not its authority |
+| --- | --- | --- |
+| Minecraft server mod | Capture attributed events; admit bounded work; deliver intentional public messages; expose bounded observations; validate and apply effects. | Model reasoning, model-provider credentials, or trusting an agent's claimed execution result. |
+| OpenClaw integration | Authenticate and bind peers; route attributed conversations; manage requests, public messages, tools, connection state, and reconciliation. | Arbitrary administrative command proxying or inventing permissions from persona. |
+| OpenClaw character agent | Reason, maintain conversational context, request advertised abilities, and emit deliberate acknowledgements, progress, and answers. | Current world truth, durable action evidence, or final permission decisions. |
+| Administrator surfaces | Configure and operate through authorized local/server controls and supported private OpenClaw interaction. | Automatically publishing private activity or bypassing game authorization. |
+| Durable-state subsystem | Preserve consequential intent/outcomes and resolve duplicates and interrupted work. | Treating a generated summary or missing receipt as proof of an effect. |
+| Diagnostics subsystem | Correlate timing, health, service outcomes, and failures privately. | Sending tool traces to players or needing unrestricted game powers. |
+
+The actor catalogue in the specification distinguishes players, authors,
+administrators, delegated staff, operators, maintainers, and machine actors.
+These boundaries are architectural requirements, not merely UI labels.
+
+## Compatibility and server-only boundary
+
+Minecraft Java **1.21.11** is the selected target. Loader, exact Java runtime,
+OpenClaw version, companion packaging, and supported APIs require qualification.
+Do not infer server compatibility from a client configuration or an old
+prototype's internal endpoint.
+
+Use vanilla-compatible chat, sounds, particles, entities, and other existing
+mechanisms for the selected catalogue. Worldspeaker requires no client mod,
+resource pack, custom rendering, or custom packets. Other server mods may have
+their own independent client requirements.
+
+Network/model waits, reconnects, and blocking persistence stay off the tick
+thread. World work is scheduled through the selected loader's supported server
+mechanism with finite bounds. When durable preparation precedes an effect,
+complete that preparation asynchronously, then schedule and revalidate the game
+work; do not make the tick thread wait on storage or a remote service.
+
+## Logical interaction flow
+
+```text
+Authenticated player invocation
+    -> early timestamp and event attribution
+    -> recognition, authorization, bounded admission
+    -> intentional first public reply within 1,000 ms
+    -> scheduled substantive OpenClaw work
+         -> bounded observations / validated effects as permitted
+         -> deliberate progress when appropriate
+    -> fresh, audience-checked answer or terminal notice
+
+Private administrator <-> supported OpenClaw administrative surface
+Private operator      <-> authorized configuration / diagnostics / recovery
+```
+
+The diagram describes required behavior, not chosen transport or thread topology.
+A ready answer may be the first reply; it does not require an extra receipt.
+The fast-response mechanism may be coordinated with substantive work, but it
+must not wait for a previously active investigation to finish. It must not
+create a second, mutually unaware character runtime.
+
+Whether a persona-configured acknowledgement produced by the integration is
+acceptable remains unresolved. Do not substitute one for an OpenClaw reply and
+claim the one-second requirement has been met. If supported OpenClaw mechanisms
+cannot satisfy the required interaction, report that conflict rather than
+relabeling local queue telemetry as character dialogue.
+
+The latency contract includes queue time and distinguishes server dispatch from
+client display. Deadline misses, unavailable/busy outcomes, completed answers,
+and acknowledgements are separate measurements.
+
+## Addressing, follow-ups, and attention
+
+- Provide a discoverable generic interaction command; `/pray` may be a God
+  preset alias, not a fixed identity for the whole mod.
+- Recognize configured names and aliases in natural direct address, including
+  beginning, middle, and end of a sentence. Distinguish mention from invocation.
+- Bound follow-up recognition by time and attributed conversation context.
+  A message from another player must not inherit the first player's identity.
+- Capture only the context needed for configured conversation and freshness.
+  Subscription does not mean every event creates an agent turn.
+- Do not turn ambient chat into an unbounded feed. Context-invalidating events
+  can update pending work without asking the model to answer each event.
+- Unsolicited interventions are disabled. Their behavior is a proposed extension,
+  not an implied consequence of exposing an event subscription setting.
+
+## Request scheduling and lifecycle
+
+Logical request states distinguish captured, admitted, queued, active, terminal,
+expired, and cancelled work. An action becoming unknown is not a successful
+terminal answer to the player. Exact wire names and transitions remain to be
+defined against supported OpenClaw APIs.
+
+Required scheduling properties:
+
+- Finite per-player and global pending counts, age limits, and execution budgets.
+- Coalescing of identical repetitions while preserving changed requests or
+  explicitly refusing them; no silent disposal of distinct work.
+- Fair service between players, including the measured repetition regression.
+- Original event identity, original time, requester, and world preserved in
+  batches, retries, and deduplication.
+- Truthful queued/active progress, explicit terminal outcomes, and no indefinite
+  accepted work after a quick acknowledgement.
+- Late results checked for expiry, cancellation, changed audience, and freshness.
+- Controlled world mutation regardless of reasoning concurrency.
+
+A single active substantive turn and round-robin player service are conservative
+candidate defaults, not a reason to serialize the first-response path behind
+long work. Exact concurrency must be supported and tested. Separate inboxes do
+not imply separate character personalities or uncontrolled parallel effects.
+
+## Character content and authority configuration
+
+| Configuration area | Meaning |
 | --- | --- |
-| Minecraft server mod | Capture game events; acknowledge player requests; provide bounded world queries; validate and apply permitted game actions. |
-| OpenClaw integration | Route Minecraft conversations into OpenClaw; manage connection and request lifecycles; return public character dialogue and action results. |
-| OpenClaw character agent | Reason about events, maintain conversational memory, select available tools, and produce in-character replies. |
-| Administrator interface | Use OpenClaw's supported administrative surfaces to configure and operate the agent without joining the player-facing conversation. |
+| Stable identity | Character ID, display name, aliases, and vanilla-compatible chat presentation. |
+| Persona | Rough prose for personality, premise, and behavioral guidance. Never executable policy. |
+| Attention | Allowed context subscriptions and finite attention limits; unsolicited intervention remains disabled. |
+| Abilities | Named, typed operations with default-deny grants, target/delegation policy, limits, and current-state checks. |
+| Agent association | Qualified OpenClaw agent binding and explicitly separated routing/context. |
+| Operational policy | Finite queue/budget settings, credential references, private diagnostics, and recovery behavior. |
 
-The integration must use supported OpenClaw extension APIs. Its exact packaging,
-supported OpenClaw version, and transport have not been selected. Do not assume
-that an internal API used by the earlier prototype is a stable public contract.
+One character per server is committed scope. A stable ID allows renaming without
+changing historical association; it is not a promise of multi-character support.
+God's optional roleplay conventions remain persona/preset content. Invalid
+configuration is rejected coherently and privately, without widening policy or
+partially applying grants. Reload/restart behavior must be documented.
 
-## Server-only boundary
+## Public output versus private activity
 
-The initial implementation should use vanilla-compatible chat, sounds,
-particles, entities, and other existing game mechanisms. It must not require
-client-side Worldspeaker code, custom rendering, or custom client packets.
-This does not prevent other mods on the server from having their own client
-requirements.
+Public character messages are explicit, bounded, audience-addressed messages of
+four logical kinds: acknowledgement, progress, answer, and safe failure or
+availability notice. Each is a complete intentional publication, not a raw
+stream of model fragments or a tool trace. Output deduplication and lifecycle
+checks apply independently of action deduplication.
 
-Model calls, network waits, and other blocking work must never run on the
-Minecraft server tick thread. World reads and changes that require that thread
-must be scheduled there safely, using bounded work.
+Never forward RCON/console output, command receipts, raw command feedback,
+request IDs, timings, queue telemetry, internal reasoning, private instructions,
+credentials, or administrative conversation. This includes indirect command
+feedback broadcasts received by operator players. Avoid the leaking execution
+path; do not conceal it by globally muting unrelated server diagnostics.
 
-## Player interaction
+Private OpenClaw interaction and public player interaction require separate
+routing and context boundaries, not only persona instructions. Authenticated
+admin text is still not automatically an instruction to publish or act in game.
+Players, signs, books, and other world text are untrusted data. Formatting and
+audience controls must not allow content to impersonate authoritative envelopes.
+Qualify OpenClaw's tool/context policy for player-origin turns as well: the game
+ability boundary is not sufficient if those turns inherit unrelated operator
+tools or private administrative sessions through the harness.
 
-### Addressing and follow-ups
+## Game tools and current state
 
-Provide an explicit, discoverable interaction command, with `/pray` as a
-possible God-preset alias rather than the generic mod's fixed identity.
-Also recognize configured character names and aliases in natural chat,
-including forms such as "help me, God" and "what do you think, God?".
+The [ability contract](ability-contract.md) defines required schemas, delegation,
+deny precedence, quotas, revocation, action identity, and structured outcomes.
+There is no unrestricted RCON, shell, or arbitrary-command character capability.
+Even read-only tools must have explicit bounds and appropriate data permissions.
 
-Mention detection needs context: mentioning a character to another player is
-not always a request. Use a bounded conversational window for follow-ups,
-with enough player identity and recent context to distinguish an ongoing
-exchange from unrelated chat. Exact rules remain a playtest decision.
+Minecraft is authoritative for current facts. Recheck relevant state before
+dialogue and immediately before effects: death, movement, dimension changes,
+departure, or another action may have invalidated the original request. Dialogue
+and effects may have different expiry rules, but neither may use a new batch
+timestamp to make old evidence fresh.
 
-Accepted requests should receive immediate, lightweight receipt feedback.
-That feedback must not pretend that the character has already considered or
-agreed to the request. When the connection is unavailable or the inbox is
-full, say so rather than silently accepting work that cannot be served.
+Discovery describes current availability, not an irrevocable grant. The server
+checks current policy and material preconditions at execution and atomically
+enforces applicable resource reservations. Effects have controlled ordering;
+multi-step operations report real partial outcomes rather than assumed rollback.
 
-### Fair scheduling
+## Authentication and transport boundary
 
-Do not reuse the prototype's unbounded, one-message-at-a-time shared backlog.
-The scheduling design should:
+Use supported OpenClaw extension APIs and qualify the exact lifecycle and
+private/public surfaces. Select an authenticated transport bound to the
+intended server/world/character/agent, with appropriate protection for its
+network exposure. Document schema/version negotiation, replay handling,
+timeouts, cancellation, and reconnect limits before claiming compatibility.
 
-- Bound the amount and age of pending work.
-- Coalesce repeated messages from the same player instead of generating a full
-  agent turn for each repetition.
-- Preserve meaningful changes in a request; coalescing is not permission to
-  discard a distinct request just because it came from the same player.
-- Prevent one player's message rate from starving other players.
-- Prioritize relevant, time-sensitive events over low-value repeated chatter.
-- Keep original event timestamps and identities when batching messages; a new
-  batch must not make old evidence appear fresh or transfer player authority.
-- Preserve a coherent shared world conversation and a controlled ordering of
-  effects, even if multiple requests are pending.
+Model-provider credentials live in OpenClaw. Connection credentials are local
+operational secrets, not persona or public examples. Public project docs explain
+generic configuration and trust boundaries, never a private server's topology,
+identity, access details, or deployment commands.
 
-The exact concurrency model is open. Separate player inboxes do not require
-separate, mutually unaware character personalities or uncontrolled parallel
-world mutations.
+## Durability, unknown outcomes, and historical input
 
-### Freshness
+Identify invocations, requests, events, actions, public messages, and world
+instances distinctly. Durable consequential outcome records are independent of
+OpenClaw memory and survive agent-session resets. Record enough intent and
+outcome evidence to reconcile interruption without collecting private dialogue
+by default.
 
-A fast response based on obsolete context is still wrong. Before delivering a
-reply or applying an action, consider whether the situation has materially
-changed: the player may have died, moved, disconnected, or already received
-help. Refresh relevant facts and revise or cancel stale work when necessary.
-Conversation replies and consequential game actions may need different expiry
-policies; those policies should be explicit rather than accidental.
+Idempotent handling returns known state for a repeated identical action ID and
+rejects conflicting payloads. When a crash spans game execution and persistence,
+execution may be unknown. Do not retry, refund, compensate, or announce success
+without authoritative evidence and relevant authorization. Do not promise
+exactly-once behavior across a boundary that cannot commit atomically.
 
-## Character configuration
+Imports, recovered backlogs, and generated summaries retain historical origin.
+Reading or replaying them cannot trigger new gameplay effects. Storage format,
+retention, reconciliation surfaces, backup/restore semantics, and migrations
+remain explicit decisions, including preservation of unresolved evidence.
 
-Start with one configurable character per server. Use a stable character ID
-internally so names can change and additional characters remain possible later.
-Keep the initial configuration small:
+## Private observability
 
-| Setting | Purpose |
-| --- | --- |
-| Identity | Display name, chat appearance, and addressing aliases. |
-| Persona | Personality, world premise, and concise behavioral guidance. |
-| Attention | Relevant event subscriptions and proactive-interaction policy. |
-| Capabilities | Available world queries, actions, and server-enforced limits. |
-| Agent association | The OpenClaw agent and conversation routing used by this character. |
+Correlate these stages without requiring full private conversation bodies:
 
-Personality is not permission. Changing God to a forest spirit should not
-require rewriting the integration, and a persona prompt must never grant new
-server privileges. The God preset's offerings, bargains, judgments, or other
-roleplay rules should not become mandatory mechanics for every character.
+- Original game event and server capture.
+- Recognition, admission/disposition, queue admission, and queue wait.
+- First complete public reply and its origin.
+- Agent-turn/model/tool activity where supported telemetry exposes it.
+- Action validation, submission, execution, and known or unknown outcome.
+- Progress, final reply, expiry, rejection, cancellation, and failure.
 
-Start with addressed conversation. Occasional event-driven interventions are
-a proposed extension; their triggers and frequency still need playtesting.
-
-## Agent and administrator separation
-
-Players interact with characters, not an operator console. Player messages,
-signs, books, and other world content are untrusted inputs, never administrative
-instructions. Use authenticated player identities for attribution and actual
-administrator permissions for privileged operations.
-
-Only deliberately public, final character output should reach players. Do not
-forward internal reasoning, tool traces, private instructions, administrative
-discussion, credentials, or integration error details into Minecraft chat.
-Player-facing availability and failure notices should be intentional, safe
-messages rather than raw OpenClaw diagnostics.
-
-Model credentials belong in OpenClaw, not in the Minecraft client or character
-configuration. Authenticate the mod-to-integration connection and limit it to
-the intended server and agent. Worldspeaker should expose structured,
-capability-checked game tools rather than unrestricted RCON, shell access, or
-arbitrary command execution to the character.
-
-## State and effects
-
-Minecraft is authoritative for current world state; server policy is
-authoritative for allowed effects. OpenClaw memory provides conversational
-context, not proof that a game action succeeded.
-
-Preserve the useful reliability boundaries of the earlier integration:
-
-- Identify events, requests, world instances, and actions explicitly.
-- Validate targets, permissions, limits, and current preconditions on the server.
-- Record consequential action outcomes independently of conversational memory.
-- Use idempotent action handling so reconnects and retries cannot duplicate
-  rewards or other effects.
-- Treat an unknown outcome as unknown. Reconcile it rather than blindly
-  retrying, refunding, or claiming success.
-- Distinguish server submission, confirmed execution, and actual player receipt.
-- Keep historical imports and recovered event backlogs from triggering new
-  gameplay effects.
-
-Durable game facts should survive an OpenClaw session reset. The storage format,
-retention policy, and recovery interface remain implementation decisions. Any
-future generated story or summary must not silently become authoritative
-evidence for later judgments.
-
-## Observability
-
-Correlate each request across both components and measure these stages
-separately:
-
-1. Game event occurrence and capture.
-2. Local acknowledgment.
-3. Queue admission and wait.
-4. Agent-turn start, model activity, and tool activity.
-5. Server action submission and completion.
-6. Reply submission, expiry, failure, or cancellation.
-
-Report distributions, queue depth, coalesced messages, per-player fairness,
-stale requests, and failures—not just average response time. Cross-host timing
-requires synchronized clocks; measure local durations with monotonic clocks
-where possible. Timing diagnostics should not require recording full private
-conversation bodies or secrets.
+Report maxima and deadline misses as well as distributions, completions,
+per-player fairness, queue count/age, coalescing, stale requests, failures, and
+tick health. Unavailable timing remains unknown. Local durations use monotonic
+clocks; cross-host measurements require explicit synchronization assumptions.
+Only authorized operational surfaces receive telemetry.

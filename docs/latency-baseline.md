@@ -108,8 +108,16 @@ separate queue wait, transport setup, inference, and tool work.
 
 ## Required regression scenarios
 
+These scenarios connect predecessor failures and the current product
+requirements. The one-second first-response requirement is a new acceptance
+contract, not a measurement established by this historical session.
+
 - A player addresses the character with its name at the beginning, middle,
   and end of a message, then follows up without repeating the name.
+- A simple request receives a character reply within 1,000 ms; a longer
+  investigation receives a timely acknowledgement followed by useful progress
+  and an answer or explicit termination. Test this while another turn is active,
+  including queue time and distinguishing server dispatch from client display.
 - One player repeats the same request rapidly while another makes a distinct
   request; the second player must not wait behind a turn for every repetition.
 - A death, movement, or other material world change occurs while a reply is
@@ -118,7 +126,11 @@ separate queue wait, transport setup, inference, and tool work.
   through the model and server as if the player were still waiting.
 - OpenClaw becomes unavailable, reconnects, or returns an uncertain action
   outcome; requests receive honest feedback and effects are not duplicated.
+- Ordinary players and operator players see clean dialogue during normal
+  interaction, action failure, and outages. RCON output, command-feedback
+  broadcasts caused by the integration, tool traces, and timings remain private.
 
-Use these scenarios alongside the proposed acceptance gates in the
-[roadmap](roadmap.md). Do not compare only against this session's averages:
-its light-load and overloaded periods behaved very differently.
+Use these scenarios alongside the story criteria and cross-epic acceptance
+matrix in the [product specification](specification.md). Do not compare only
+against this session's averages: its light-load and overloaded periods behaved
+very differently.
