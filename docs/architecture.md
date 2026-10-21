@@ -10,7 +10,7 @@ mechanisms and candidate defaults. Nothing here sequences delivery milestones.
 
 | Component | Responsibility | Not its authority |
 | --- | --- | --- |
-| Minecraft server mod | Capture attributed events; admit bounded work; deliver intentional public messages; expose bounded observations; validate and apply effects. | Model reasoning, model-provider credentials, or trusting an agent's claimed execution result. |
+| Minecraft server mod | Capture attributed events; admit bounded work; own the local first-response/publication gate; expose bounded observations; validate and apply effects. | Model reasoning, model-provider credentials, or trusting an agent's claimed execution result. |
 | OpenClaw integration | Authenticate and bind peers; route attributed conversations; manage requests, public messages, tools, connection state, and reconciliation. | Arbitrary administrative command proxying or inventing permissions from persona. |
 | OpenClaw character agent | Reason, maintain conversational context, request advertised abilities, and emit deliberate acknowledgements, progress, and answers. | Current world truth, durable action evidence, or final permission decisions. |
 | Administrator surfaces | Configure and operate through authorized local/server controls and supported private OpenClaw interaction. | Automatically publishing private activity or bypassing game authorization. |
@@ -23,10 +23,12 @@ These boundaries are architectural requirements, not merely UI labels.
 
 ## Compatibility and server-only boundary
 
-Minecraft Java **1.21.11** is the selected target. Loader, exact Java runtime,
-OpenClaw version, companion packaging, and supported APIs require qualification.
-Do not infer server compatibility from a client configuration or an old
-prototype's internal endpoint.
+Minecraft Java **1.21.1** is the selected target on **Fabric Loader** (server-only)
+with **Java 21 LTS**. OpenClaw connects via an authenticated bidirectional WebSocket.
+These are design selections, not verified compatibility. Exact Fabric Loader,
+dependencies, Java build, OpenClaw version, extension packaging, and supported
+APIs require qualification. Do not infer server compatibility from a client
+configuration or an old prototype's internal endpoint.
 
 Use vanilla-compatible chat, sounds, particles, entities, and other existing
 mechanisms for the selected catalogue. Worldspeaker requires no client mod,
@@ -61,11 +63,46 @@ The fast-response mechanism may be coordinated with substantive work, but it
 must not wait for a previously active investigation to finish. It must not
 create a second, mutually unaware character runtime.
 
-Whether a persona-configured acknowledgement produced by the integration is
-acceptable remains unresolved. Do not substitute one for an OpenClaw reply and
-claim the one-second requirement has been met. If supported OpenClaw mechanisms
-cannot satisfy the required interaction, report that conflict rather than
-relabeling local queue telemetry as character dialogue.
+### First-response ownership and deadline
+
+The integration owns one first-response decision per invocation. Its local
+admission/delivery component in the Minecraft mod starts the deadline at server
+capture, so the fallback requires neither a remote round trip nor a model call.
+Validated persona templates are cached locally; supported substitutions contain
+only audience-safe display data, not arbitrary model text, commands, private
+instructions, or executable policy. Template/configuration failure makes service
+unavailable rather than enabling an unvalidated fallback.
+
+1. Record `t0`, attribution, and a bounded admission outcome. Admit only when
+   the local queue and authenticated agent connection are serviceable; unknown
+   availability, overflow, or denial gets a safe disposition, not an acceptance.
+2. A complete, intentionally public, audience-checked OpenClaw message may claim
+   the first-response slot before `t0 + 750 ms`. Buffer private stream fragments;
+   a first token or incomplete answer cannot claim that slot.
+3. At the 750 ms cutoff, claim any still-empty slot for a local persona-configured
+   acknowledgement of the actual queued/active state. Reserve the remaining
+   250 ms for validation and dispatch by `t0 + 1,000 ms`; do not wait until the
+   deadline to discover that model generation is slow. Emit earlier when known
+   queueing makes waiting pointless. These timing budgets still need load tests.
+4. Serialize slot selection, final lifecycle checks, and publication through one
+   local delivery gate. A definite failure before dispatch is not recorded as
+   delivered; if time and audience validity remain, send the safe alternative.
+   An unknown dispatch outcome requires reconciliation by message identity, not
+   an automatic alternative that may duplicate publication. Suppress a losing
+   acknowledgement, but retain a late valid answer as terminal dialogue.
+5. If availability or admission changes before dispatch, publish the truthful
+   disposition instead. After an acknowledgement, later failure gets a terminal
+   notice; it does not retroactively become successful character service.
+
+Record publication identity and reply source, and supply locally generated
+dialogue to the same attributed OpenClaw conversation before its next substantive
+turn. It must not create a second character memory or cause the model to repeat
+the acknowledgement. Reconnect handling reconciles public messages separately
+from actions. Raw queue telemetry and machine receipts never become dialogue.
+
+The local timer cannot prove an absolute deadline under server stalls or client
+network delays. Record misses rather than treating the selected fast-path design
+as measured compliance. Both queued and active work still need useful completion.
 
 The latency contract includes queue time and distinguishes server dispatch from
 client display. Deadline misses, unavailable/busy outcomes, completed answers,
@@ -106,10 +143,19 @@ Required scheduling properties:
 - Late results checked for expiry, cancellation, changed audience, and freshness.
 - Controlled world mutation regardless of reasoning concurrency.
 
-A single active substantive turn and round-robin player service are conservative
-candidate defaults, not a reason to serialize the first-response path behind
-long work. Exact concurrency must be supported and tested. Separate inboxes do
-not imply separate character personalities or uncontrolled parallel effects.
+The selected scheduling policy is one active substantive turn per character and
+round-robin service between non-empty player queues, FIFO within each player's
+queue. Candidate starting limits are two pending distinct requests per player
+and sixteen globally, excluding active work. A newly queued player joins the
+rotation without resetting another player's waiting age. Context-invalidating
+events may retire work immediately but do not create extra substantive turns.
+Overflow receives a prompt safe disposition. These choices are unqualified and
+must demonstrate useful fair completion, not merely fast acknowledgements.
+
+The local first-response path never waits behind a substantive turn. Separate
+inboxes do not imply separate character personalities or uncontrolled parallel
+effects. Count, age, execution, and deduplication defaults are tracked in
+[open decisions](open-decisions.md), not advertised as measured capacity.
 
 ## Character content and authority configuration
 
@@ -119,7 +165,7 @@ not imply separate character personalities or uncontrolled parallel effects.
 | Persona | Rough prose for personality, premise, and behavioral guidance. Never executable policy. |
 | Attention | Allowed context subscriptions and finite attention limits; unsolicited intervention remains disabled. |
 | Abilities | Named, typed operations with default-deny grants, target/delegation policy, limits, and current-state checks. |
-| Agent association | Qualified OpenClaw agent binding and explicitly separated routing/context. |
+| Agent association | Configured OpenClaw agent binding and explicitly separated routing/context; the supported API/version still requires qualification. |
 | Operational policy | Finite queue/budget settings, credential references, private diagnostics, and recovery behavior. |
 
 One character per server is committed scope. A stable ID allows renaming without
@@ -171,11 +217,25 @@ multi-step operations report real partial outcomes rather than assumed rollback.
 
 ## Authentication and transport boundary
 
-Use supported OpenClaw extension APIs and qualify the exact lifecycle and
-private/public surfaces. Select an authenticated transport bound to the
-intended server/world/character/agent, with appropriate protection for its
-network exposure. Document schema/version negotiation, replay handling,
-timeouts, cancellation, and reconnect limits before claiming compatibility.
+Use supported OpenClaw extension APIs with an authenticated bidirectional
+WebSocket transport bound to the intended server/world/character/agent. Plain
+`ws://` is limited to loopback; every non-loopback connection requires `wss://`
+with certificate/peer validation. Connections use a distinct, scoped bearer or
+pre-shared credential on the handshake, never credentials in URLs or persona.
+Credential provisioning, rotation, revocation, and reconnect authentication still
+require a documented, tested lifecycle. This transport is a Worldspeaker
+integration design, not a claim that an existing OpenClaw endpoint implements it.
+
+Versioned JSON frames and candidate message families (`dialogue.ack`,
+`dialogue.message`, `ability.request`, `ability.response`, `heartbeat`) are
+selected directions, not a complete protocol. Distinguish event, invocation,
+request (`correlationId`), public-message, and effect (`actionId`) identities;
+an action ID is not required on unrelated heartbeats or dialogue. Binding and
+requester fields originate in authenticated components, never model arguments.
+Before qualification, define concrete schemas, negotiation, admission states,
+message acknowledgements/ordering, replay protection, deadlines, cancellation,
+heartbeat expiry, bounded reconnect/backoff, and reconciliation operations
+against pinned supported OpenClaw APIs. Until then OD-PROTOCOL remains partial.
 
 Model-provider credentials live in OpenClaw. Connection credentials are local
 operational secrets, not persona or public examples. Public project docs explain
@@ -198,8 +258,12 @@ exactly-once behavior across a boundary that cannot commit atomically.
 
 Imports, recovered backlogs, and generated summaries retain historical origin.
 Reading or replaying them cannot trigger new gameplay effects. Storage format,
-retention, reconciliation surfaces, backup/restore semantics, and migrations
-remain explicit decisions, including preservation of unresolved evidence.
+reconciliation surfaces, backup/restore semantics, and migrations remain explicit
+decisions. The initial ability contract retains consequential identity/intent/
+outcome evidence without automatic deletion and disables new effects at a finite
+configured storage ceiling rather than discarding safety records. Ceiling values,
+storage implementation, and any future pruning policy require qualification;
+unresolved evidence cannot be silently dropped.
 
 ## Private observability
 

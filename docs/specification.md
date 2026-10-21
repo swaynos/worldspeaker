@@ -27,9 +27,12 @@ an explicit scope decision; do not silently weaken the acceptance criteria.
 ## Product scope
 
 Worldspeaker is a server-only Minecraft Java mod connecting players and one
-configurable character to OpenClaw. The selected Minecraft target is **1.21.11**.
-The loader, exact Java runtime, OpenClaw version, extension API, and transport
-still require qualification. Selecting a target does not claim compatibility.
+configurable character to OpenClaw. The selected Minecraft target is **1.21.1**
+on **Fabric Loader** (server-only) with **Java 21 LTS**. OpenClaw communicates
+via an authenticated bidirectional WebSocket transport. These are selected
+designs, not a qualified release combination. Exact loader, dependency, Java
+build, OpenClaw version, and supported extension APIs still require recorded
+compatibility evidence.
 
 The committed scope includes addressed conversation, natural follow-ups,
 responsive and fair request handling, configurable persona, deterministic
@@ -124,11 +127,28 @@ without reporting them. Each invocation retains its attribution and disposition,
 even when duplicates share one logical agent request. An outage response is not
 an acknowledgement on behalf of an agent that has accepted work.
 
-Whether a persona-configured, integration-generated acknowledgement qualifies as
-the first character reply remains an explicit [open decision](open-decisions.md).
-The requirement must not be declared met by silently substituting such a
-fallback for an OpenClaw reply. Neither a fresh model reply within one second nor
-the necessary OpenClaw fast-response mechanism has been demonstrated yet.
+A complete, persona-configured integration acknowledgement is an accepted first
+character reply for admitted work. It does not count as a fresh model response,
+an OpenClaw acceptance receipt, or a completed answer. It must reflect actual
+local admission and availability, never invent active investigation or approval.
+An unavailable or unserviceable request instead receives the separately measured
+safe disposition above.
+
+The first-response path uses locally available, validated persona templates and
+does not wait for a model, remote round trip, or active substantive turn. A
+complete, intentionally published OpenClaw message may win the first-response
+slot before the fallback cutoff. Otherwise the integration schedules the local
+acknowledgement early enough to dispatch by the original deadline. The selected
+starting cutoff is 750 ms after `t0`, reserving 250 ms for validation and delivery;
+it is an unqualified scheduling budget, not evidence that dispatch always meets
+the deadline. First tokens and incomplete streamed fragments never occupy the
+slot. Exactly one path wins; late acknowledgements are suppressed, while a late
+valid answer may still complete the exchange.
+
+The [architecture](architecture.md) defines ownership and race handling. Tests
+record whether the reply came from OpenClaw or the integration and exercise
+cutoff races, busy agents, outages, and deadline misses. Neither this fast path
+nor the one-second requirement has been demonstrated by an implementation yet.
 
 ### Conservative behavior
 
@@ -170,8 +190,10 @@ agent traffic does not compromise the Minecraft runtime.
 contract, so that I can assess compatibility before installing Worldspeaker.
 
 **Acceptance criteria**
-- Minecraft Java 1.21.11 is identified as the selected target, not an already
-  verified release combination.
+- Minecraft Java 1.21.1 on Fabric Loader (server-only) with Java 21 LTS is
+  identified as the selected target, not an already qualified release combination.
+- Qualification records pin exact loader, dependencies, Java build, OpenClaw,
+  and companion versions and include clean-install and vanilla-client tests.
 - Published artifacts identify the qualified loader, Java, OpenClaw, and required
   companion versions; unsupported combinations are not advertised as supported.
 - A detectable incompatibility produces an actionable private diagnostic and
@@ -328,7 +350,12 @@ takes longer.
 - The acknowledgement path is exercised while another investigation is active;
   it cannot wait behind that investigation's complete turn.
 - Tests identify the reply's source and do not count generic local telemetry or
-  an unapproved synthetic fallback as an OpenClaw response.
+  integration-generated acknowledgements as fresh OpenClaw/model responses.
+- A partial stream cannot suppress the fallback. Cutoff races produce one first
+  reply, not duplicate acknowledgements, and a later valid answer is preserved.
+- Local acknowledgements use validated persona templates and actual admission
+  state; unavailable agents receive a safe disposition rather than fictitious
+  acceptance. Neither path waits for a substantive turn or remote round trip.
 
 ### RESP-02 — Stay informed during longer work
 
@@ -566,6 +593,9 @@ so that I can answer and act using current facts rather than assumptions from me
 **Acceptance criteria**
 - The supported catalogue includes meaningful observations of relevant players
   and local world state, with explicit fields, bounds, and authorization.
+- The initial query is `worldspeaker.core.observe_player` contract v1, as defined
+  in the ability contract. Health and current maximum health are authoritative;
+  valid health boosts or attribute changes above 20 health points are not clamped.
 - Results identify observation time and world context; unavailable, unloaded,
   or out-of-scope state is not fabricated or obtained through an unbounded scan.
 - Only necessary allowed information is returned; private configuration,
@@ -583,8 +613,16 @@ so that interaction can meaningfully affect the world rather than only describe 
   each covered by a deterministic ability contract and vanilla-compatible presentation.
 - Effects are unavailable until explicitly granted; neither a persona nor a
   natural-language request invents a new operation.
-- Exact effect selection remains an open decision. Lightning, inventory changes,
-  teleportation, and rewards mentioned as examples are not silently promised.
+- The initial effect is `worldspeaker.core.strike_lightning` contract v1, as
+  defined in the ability contract: deterministic placement, visual-only by
+  default, and separately granted, capped, non-lethal damage to one target.
+- This is controlled lightning presentation, not unrestricted vanilla lightning.
+  Fire, secondary entity effects, and block mutations are prohibited. Protection
+  checks cover the complete documented footprint, not just the target's block;
+  unsupported or unavailable protection/suppression mechanisms fail closed.
+- Inventory changes, teleportation, rewards, and other unlisted effects remain
+  outside the selected catalogue. Selected abilities are not advertised as
+  available until their implementation and authoritative tests pass.
 - Tests verify authorized success and denied/out-of-scope attempts against
   authoritative game state, not just the character's text.
 
@@ -1029,8 +1067,8 @@ The following are not promised by this specification:
 - Unrestricted RCON, shell access, arbitrary command execution, or automatic
   operator privileges for a character.
 - Fixed God-specific offering, judgment, bargain, economy, or reward mechanics.
-- A particular destructive effect, reward system, or complete action catalogue
-  before its deterministic contracts and scope have been selected.
+- Unrestricted vanilla lightning, fire propagation, inventory changes,
+  teleportation, rewards, or other effects beyond the selected bounded catalogue.
 - Autonomous unsolicited interventions beyond the explicitly configured context
   handling described above; this remains a proposed extension, not hidden scope.
 - Guaranteed fresh model generation in one second on arbitrary providers or

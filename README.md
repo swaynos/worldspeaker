@@ -7,9 +7,10 @@ agents behind the scenes—no client installation required.
 ## Status
 
 **Specification stage.** This repository contains product and design
-documentation, not a runnable mod. **Minecraft Java 1.21.11** is the selected
-target. The loader, exact Java runtime, supported OpenClaw APIs, and installation
-combination have not yet been qualified.
+documentation, not a runnable mod. **Minecraft Java 1.21.1**, **Fabric Loader**
+(server-only), and **Java 21 LTS** are the selected target. Exact dependency and
+runtime builds, supported OpenClaw APIs, and the installation combination still
+require qualification; no compatible release has been verified yet.
 
 Worldspeaker grows out of an existing RCON-based God character on a private
 Minecraft server. That prototype demonstrated the idea, but also exposed slow
@@ -59,10 +60,17 @@ queries and actions. Custom client rendering, voice interaction, simultaneous
 multiple characters, broad multi-loader/version support, a large character UI,
 and autonomous unsolicited interventions are not promised features.
 
-The source of the fast acknowledgement, exact ability catalogue, and technical
-integration choices remain explicit [open decisions](docs/open-decisions.md).
-The one-second requirement is not yet a demonstrated capability, and ordinary
-completion targets are distinct from first-response timing.
+The selected first-response design accepts a complete OpenClaw public message
+or a persona-configured integration acknowledgement; partial model streams do
+not count. The initial [ability catalogue](docs/ability-contract.md) selects a
+bounded player observation and controlled lightning: visual-only by default,
+with separately authorized, capped, non-lethal single-target damage and no fire
+or secondary world mutations. Neither ability is implemented or available yet.
+
+These are design choices, not demonstrated capabilities. Exact integration
+mechanisms and qualification evidence remain tracked in
+[open decisions](docs/open-decisions.md). Ordinary completion targets are
+distinct from first-response timing.
 
 ## Proposed architecture
 
