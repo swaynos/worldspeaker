@@ -261,7 +261,9 @@ was not the first word.
 - Tests include direct addressing at the beginning, middle, and end of a
   sentence, with documented case, punctuation, and word-boundary behavior.
 - Mentioning the character to another player is tested separately from
-  addressing it; the recognition policy and ambiguous cases are documented.
+  addressing it; a message is classified deterministically as a third-party
+  mention rather than an invocation if it begins with another online player's
+  name or `@player` prefix. Ambiguous cases are documented.
 - Name and alias changes do not require source changes or change the stable
   character identity.
 
@@ -274,7 +276,8 @@ window, so that I do not need to repeat the character's name in every message.
 
 **Acceptance criteria**
 - Follow-up recognition has a finite, documented window and enough context to
-  distinguish an exchange from unrelated chat.
+  distinguish an exchange from unrelated chat; addressing another online player
+  by name or prefix ends or skips the active follow-up window for that message.
 - Context remains bound to authenticated player identity, world, and character;
   another player's message cannot inherit the first player's authority.
 - Expiry, departure, and conversation reset end or revalidate the window.

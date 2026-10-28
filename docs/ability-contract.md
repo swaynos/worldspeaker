@@ -199,7 +199,9 @@ or a claim that OpenClaw already exposes these tools.
   authorization fallback.
 - **Target scope:** Resolve one UUID by authoritative online-player lookup. The
   requester and target must be in the same server/world instance and dimension,
-  no more than 64 blocks apart by Euclidean distance at execution, within the
+  no more than 64 blocks apart by Euclidean distance measured between their exact
+  floating-point feet coordinates (`Entity.getPos()`) at execution
+  ($\sqrt{(x_1 - x_2)^2 + (y_1 - y_2)^2 + (z_1 - z_2)^2} \le 64.0$), within the
   grant's spatial scope and the world border. Self-targeting satisfies the range
   check but not the grant requirement. Neither entry loads chunks or searches
   for an alternate target. Offline, hidden-by-policy, unresolved, unloaded, or
@@ -331,11 +333,17 @@ or a claim that OpenClaw already exposes these tools.
   This margin is not permission for native side effects inside it.
 - **Protection sources:** Respect server-configured protected regions and spawn
   protection without an operator exemption. The installation must explicitly
-  declare whether external claims are authoritative and, if so, use a qualified
-  integration for every configured source. Missing, unsupported, unavailable, or
-  indeterminate required protection data denies the action. Absence of an adapter
-  is not evidence that no claims exist. Protection changes are rechecked at the
-  execution boundary, using bounded local lookups rather than remote tick waits.
+  declare whether external claims are authoritative using the configuration key
+  `protection.externalClaimsMode`:
+  - `NONE`: Validate vanilla spawn protection and the world border only; do not
+    require an external claim adapter.
+  - `REQUIRED`: Require a qualified external claim integration for all configured
+    claim providers; fail closed if an adapter is missing, unsupported,
+    unavailable, or indeterminate.
+  The example configuration defaults to `REQUIRED`. An administrator must set
+  `NONE` explicitly on servers with no claim plugins. Protection changes are
+  rechecked at the execution boundary using bounded local lookups rather than
+  remote tick waits.
 - **Preconditions/freshness:** Target is online, alive, non-spectating, and in a
   ticking chunk; the impact column has sky access as determined from current
   loaded server state. The original invocation is at most 15 seconds old, its
@@ -348,13 +356,18 @@ or a claim that OpenClaw already exposes these tools.
   no more than one damage attempt against the named player. In visual mode there
   is no damage. In damage mode, the attempted amount is at most the grant's
   `maxDamage`, 5 health points, and `max(0, currentHealth - 1)`, whichever is
-  smallest. Respect normal damage mitigation, absorption, invulnerability, and
-  protection vetoes; never bypass them. The operation is non-lethal and reports
-  actual damage rather than assuming the requested amount was applied. A target
-  already below 1 health point is never healed or further damaged by this
-  operation. Qualification must establish that applicable damage modifiers/hooks
-  cannot amplify actual loss past these ceilings or make the operation lethal;
-  unsupported combinations disable damage mode.
+  smallest. Here, `currentHealth` is the target player's base red health points
+  only (`LivingEntity.getHealth()`), excluding absorption. To guarantee non-lethal
+  behavior, the server must apply a dedicated damage source that suppresses
+  secondary reflection (such as the Thorns enchantment), or measure health after
+  mitigation and abort the damage step before application if remaining health
+  would fall below 1.0 health point. Respect normal damage mitigation, absorption,
+  invulnerability, and protection vetoes; never bypass them. The operation is
+  non-lethal and reports actual damage rather than assuming the requested amount
+  was applied. A target already below 1 health point is never healed or further
+  damaged by this operation. Qualification must establish that applicable damage
+  modifiers/hooks cannot amplify actual loss past these ceilings or make the
+  operation lethal; unsupported combinations disable damage mode.
 - **Prohibited mechanics:** In both modes, prevent fire placement/burning,
   knockback, damage to bystanders/mobs/items, entity transformations, explosions,
   copper changes, lightning-rod/redstone activation, weather changes, and other

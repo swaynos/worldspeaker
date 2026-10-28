@@ -96,9 +96,13 @@ unavailable rather than enabling an unvalidated fallback.
 
 Record publication identity and reply source, and supply locally generated
 dialogue to the same attributed OpenClaw conversation before its next substantive
-turn. It must not create a second character memory or cause the model to repeat
-the acknowledgement. Reconnect handling reconciles public messages separately
-from actions. Raw queue telemetry and machine receipts never become dialogue.
+turn. Specifically, the initial invocation payload at `t0` supplies the candidate
+local acknowledgement template and cutoff time to the OpenClaw integration; if the
+local integration fires `dialogue.ack` at the 750 ms cutoff, the integration suppresses
+redundant introductory greetings in any subsequent `dialogue.message`. It must not
+create a second character memory or cause the model to repeat the acknowledgement.
+Reconnect handling reconciles public messages separately from actions. Raw queue
+telemetry and machine receipts never become dialogue.
 
 The local timer cannot prove an absolute deadline under server stalls or client
 network delays. Record misses rather than treating the selected fast-path design
