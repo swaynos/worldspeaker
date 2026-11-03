@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worldspeaker.invalid/schema/compatibility-qualification-v1.json",
+  "title": "Worldspeaker qualification record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion", "recordType", "status", "deploymentId", "manifestRevision",
+    "deploymentManifestSha256", "runId", "sourceRevision", "dirtyTree", "startedAtUtc",
+    "testerRole", "reviewerRole", "platform", "software", "artifacts", "tests",
+    "approvals", "features", "limitations"
+  ],
+  "$defs": {
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "sha256", "path"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "evidenceClass"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "evidenceClass": { "enum": ["real", "synthetic-fixture"] }
+      }
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "command", "status", "sampleCount", "exitCode", "evidence"],
+      "properties": {
+        "id": { "enum": ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8"] },
+        "command": { "type": "string", "minLength": 1 },
+        "status": { "enum": ["passed", "failed", "blocked", "skipped"] },
+        "sampleCount": { "type": "integer", "minimum": 0 },
+        "exitCode": { "type": ["integer", "null"] },
+        "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" } }
+      }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "reviewer", "role", "approvedAtUtc", "sourceRevision",
+        "deploymentManifestSha256", "artifactPairSha256", "approvalClass", "fixtureOnly"
+      ],
+      "properties": {
+        "reviewer": { "type": "string", "minLength": 1 },
+        "role": { "enum": ["QA", "STAKEHOLDER"] },
+        "approvedAtUtc": { "type": "string", "format": "date-time" },
+        "sourceRevision": { "type": "string", "minLength": 1 },
+        "deploymentManifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "artifactPairSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "approvalClass": { "enum": ["real", "synthetic-fixture"] },
+        "fixtureOnly": { "type": "boolean" }
+      }
+    },
+    "qaApproval": {
+      "allOf": [
+        { "$ref": "#/$defs/approval" },
+        { "type": "object", "properties": { "role": { "const": "QA" } }, "required": ["role"] }
+      ]
+    },
+    "stakeholderApproval": {
+      "allOf": [
+        { "$ref": "#/$defs/approval" },
+        { "type": "object", "properties": { "role": { "const": "STAKEHOLDER" } }, "required": ["role"] }
+      ]
+    },
+    "realQaApproval": {
+      "allOf": [
+        { "$ref": "#/$defs/qaApproval" },
+        {
+          "type": "object",
+          "properties": { "approvalClass": { "const": "real" }, "fixtureOnly": { "const": false } },
+          "required": ["approvalClass", "fixtureOnly"]
+        }
+      ]
+    },
+    "realStakeholderApproval": {
+      "allOf": [
+        { "$ref": "#/$defs/stakeholderApproval" },
+        {
+          "type": "object",
+          "properties": { "approvalClass": { "const": "real" }, "fixtureOnly": { "const": false } },
+          "required": ["approvalClass", "fixtureOnly"]
+        }
+      ]
+    },
+    "fixtureQaApproval": {
+      "allOf": [
+        { "$ref": "#/$defs/qaApproval" },
+        {
+          "type": "object",
+          "properties": { "approvalClass": { "const": "synthetic-fixture" }, "fixtureOnly": { "const": true } },
+          "required": ["approvalClass", "fixtureOnly"]
+        }
+      ]
+    },
+    "fixtureStakeholderApproval": {
+      "allOf": [
+        { "$ref": "#/$defs/stakeholderApproval" },
+        {
+          "type": "object",
+          "properties": { "approvalClass": { "const": "synthetic-fixture" }, "fixtureOnly": { "const": true } },
+          "required": ["approvalClass", "fixtureOnly"]
+        }
+      ]
+    }
+  },
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "recordType": { "enum": ["qualification", "synthetic-test-fixture"] },
+    "status": { "enum": ["qualified", "incomplete", "fixture"] },
+    "deploymentId": { "type": "string", "minLength": 1 },
+    "manifestRevision": { "type": "string", "minLength": 1 },
+    "deploymentManifestSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "runId": { "type": "string", "minLength": 1 },
+    "sourceRevision": { "type": "string", "minLength": 1 },
+    "dirtyTree": { "type": "boolean" },
+    "startedAtUtc": { "type": "string", "format": "date-time" },
+    "testerRole": { "const": "ACT-MAINTAINER" },
+    "reviewerRole": { "type": ["string", "null"], "enum": ["ACT-MAINTAINER", "ACT-OPERATOR", "ACT-ADMIN", null] },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["os", "imageDigest", "kernel", "cpu", "memoryMiB", "jvmFlags"],
+      "properties": {
+        "os": { "type": "string", "minLength": 1 },
+        "imageDigest": { "type": ["string", "null"] },
+        "kernel": { "type": "string", "minLength": 1 },
+        "cpu": { "type": "string", "minLength": 1 },
+        "memoryMiB": { "type": "integer", "minimum": 0 },
+        "jvmFlags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "software": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["java", "node", "npm", "openclaw", "loader", "fabricApi"],
+      "properties": {
+        "java": { "type": "string", "minLength": 1 },
+        "node": { "type": "string", "minLength": 1 },
+        "npm": { "type": "string", "minLength": 1 },
+        "openclaw": { "type": "string", "minLength": 1 },
+        "loader": { "type": "string", "minLength": 1 },
+        "fabricApi": { "type": "string", "minLength": 1 }
+      }
+    },
+    "artifacts": { "type": "array", "items": { "$ref": "#/$defs/artifact" } },
+    "tests": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 8,
+      "items": { "$ref": "#/$defs/test" },
+      "allOf": [
+        { "contains": { "type": "object", "properties": { "id": { "const": "T1" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "type": "object", "properties": { "id": { "const": "T2" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "type": "object", "properties": { "id": { "const": "T3" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "type": "object", "properties": { "id": { "const": "T4" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "type": "object", "properties": { "id": { "const": "T5" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "type": "object", "properties": { "id": { "const": "T6" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "type": "object", "properties": { "id": { "const": "T7" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 },
+        { "contains": { "type": "object", "properties": { "id": { "const": "T8" } }, "required": ["id"] }, "minContains": 1, "maxContains": 1 }
+      ]
+    },
+    "approvals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["qa", "stakeholder"],
+      "properties": {
+        "qa": { "anyOf": [{ "$ref": "#/$defs/qaApproval" }, { "type": "null" }] },
+        "stakeholder": { "anyOf": [{ "$ref": "#/$defs/stakeholderApproval" }, { "type": "null" }] }
+      }
+    },
+    "features": { "type": "array", "items": { "type": "string" } },
+    "limitations": { "type": "array", "items": { "type": "string" } }
+  },
+  "allOf": [
+    {
+      "if": { "type": "object", "properties": { "recordType": { "const": "qualification" } }, "required": ["recordType"] },
+      "then": { "type": "object", "properties": { "status": { "enum": ["qualified", "incomplete"] } } }
+    },
+    {
+      "if": { "type": "object", "properties": { "recordType": { "const": "synthetic-test-fixture" } }, "required": ["recordType"] },
+      "then": {
+        "type": "object",
+        "properties": {
+          "status": { "const": "fixture" },
+          "approvals": {
+            "type": "object",
+            "properties": {
+              "qa": { "$ref": "#/$defs/fixtureQaApproval" },
+              "stakeholder": { "$ref": "#/$defs/fixtureStakeholderApproval" }
+            }
+          },
+          "tests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "evidence": { "type": "array", "items": { "type": "object", "properties": { "evidenceClass": { "const": "synthetic-fixture" } }, "required": ["evidenceClass"] } }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": { "type": "object", "properties": { "status": { "const": "qualified" } }, "required": ["status"] },
+      "then": {
+        "type": "object",
+        "properties": {
+          "dirtyTree": { "const": false },
+          "artifacts": { "type": "array", "minItems": 2, "maxItems": 2 },
+          "tests": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": { "const": "passed" },
+                "sampleCount": { "type": "integer", "minimum": 1 },
+                "exitCode": { "const": 0 },
+                "evidence": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "type": "object", "properties": { "evidenceClass": { "const": "real" } }, "required": ["evidenceClass"] }
+                }
+              }
+            }
+          },
+          "approvals": {
+            "type": "object",
+            "properties": {
+              "qa": { "$ref": "#/$defs/realQaApproval" },
+              "stakeholder": { "$ref": "#/$defs/realStakeholderApproval" }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

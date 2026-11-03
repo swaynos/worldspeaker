@@ -1,0 +1,46 @@
+{
+  "description": "Shared startup ACK-template cases for the Java canonical constructor and TypeScript schema/loader. templateRepeat expands to an exact string before validation.",
+  "cases": [
+    { "id": "ordinary-supported-player", "template": "Hello {player}", "valid": true },
+    {
+      "id": "repeated-player-substitutes-globally",
+      "template": "Hello {player}, welcome back {player}!",
+      "valid": true,
+      "playerName": "Player Two",
+      "renderedLine": "[Worldspeaker] Test Character: Hello Player Two, welcome back Player Two!"
+    },
+    {
+      "id": "unicode-joined-emoji-and-keycap-body",
+      "template": "你好, 👩‍🚀 1️⃣ {player}",
+      "valid": true,
+      "playerName": "玩家👩‍🚀",
+      "renderedLine": "[Worldspeaker] Test Character: 你好, 👩‍🚀 1️⃣ 玩家👩‍🚀"
+    },
+    {
+      "id": "player-only-template-with-empty-runtime-name-has-no-fallback",
+      "template": "{player}",
+      "valid": true,
+      "playerName": "",
+      "renderedLine": ""
+    },
+    { "id": "newline-tab-with-visible-body", "template": "first\n{player}\tready", "valid": true },
+    { "id": "exact-template-whitespace-is-retained", "template": "  Ready {player}!  ", "valid": true },
+    { "id": "whitespace-only", "template": " \t\n ", "valid": false },
+    { "id": "braille-pattern-blank-only", "template": "⠀", "valid": false },
+    { "id": "zero-width-and-invisible-only", "template": "​﻿ ", "valid": false },
+    { "id": "bidi-controls-only", "template": "؜‎‏‪‫‬‭‮⁦⁧⁨⁩⁪⁫⁬⁭⁮⁯", "valid": false },
+    { "id": "legacy-format-only", "template": "§a", "valid": false },
+    { "id": "zwj-only", "template": "‍", "valid": false },
+    { "id": "unpaired-high-surrogate-only", "template": "\ud800", "valid": false },
+    { "id": "unpaired-low-surrogate-only", "template": "\udfff", "valid": false },
+    { "id": "unsafe-control", "template": "\u0001", "valid": false },
+    { "id": "carriage-return-is-not-an-allowed-template-control", "template": "\r", "valid": false },
+    { "id": "unknown-placeholder-fails-closed", "template": "Hello {player} {username}", "valid": false },
+    { "id": "escaped-braces-are-not-supported", "template": "{{player}}", "valid": false },
+    { "id": "unmatched-braces-are-not-supported", "template": "Hello {player", "valid": false },
+    { "id": "exact-256-bmp-utf16-units", "templateRepeat": { "text": "é", "count": 256 }, "valid": true },
+    { "id": "over-256-bmp-utf16-units", "templateRepeat": { "text": "é", "count": 257 }, "valid": false },
+    { "id": "exact-256-astral-utf16-units", "templateRepeat": { "text": "🙂", "count": 128 }, "valid": true },
+    { "id": "over-256-astral-utf16-units", "templateRepeat": { "text": "🙂", "count": 129 }, "valid": false }
+  ]
+}

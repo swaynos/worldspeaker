@@ -1,0 +1,187 @@
+{
+  "$schema": "https://worldspeaker.invalid/schema/ability-predicates-v1.schema.json",
+  "$id": "https://worldspeaker.invalid/schema/ability-discovery-v1.schema.json",
+  "title": "Worldspeaker per-request ability discovery v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["catalogueVersion", "binding", "requestId", "invocationId", "policyRevision", "schemaResources", "entries"],
+  "properties": {
+    "catalogueVersion": { "const": 1 },
+    "binding": { "$ref": "#/$defs/binding" },
+    "requestId": { "$ref": "#/$defs/uuid" },
+    "invocationId": { "$ref": "#/$defs/uuid" },
+    "policyRevision": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "schemaResources": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        { "$ref": "#/$defs/predicateDialectResource" },
+        { "$ref": "#/$defs/discoverySchemaResource" },
+        { "$ref": "#/$defs/catalogueSchemaResource" }
+      ],
+      "items": false
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        { "$ref": "#/$defs/observeDiscoveryEntry" },
+        { "$ref": "#/$defs/lightningDiscoveryEntry" }
+      ],
+      "items": false,
+      "uniqueItems": true
+    }
+  },
+  "$defs": {
+    "resourceEnvelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["$id", "sha256", "schemaJson"],
+      "properties": {
+        "$id": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "schemaJson": { "type": "string", "minLength": 2, "maxLength": 32768 }
+      }
+    },
+    "predicateDialectResource": {
+      "allOf": [
+        { "$ref": "#/$defs/resourceEnvelope" },
+        { "type": "object", "properties": { "$id": { "const": "https://worldspeaker.invalid/schema/ability-predicates-v1.schema.json" } } }
+      ]
+    },
+    "discoverySchemaResource": {
+      "allOf": [
+        { "$ref": "#/$defs/resourceEnvelope" },
+        { "type": "object", "properties": { "$id": { "const": "https://worldspeaker.invalid/schema/ability-discovery-v1.schema.json" } } }
+      ]
+    },
+    "catalogueSchemaResource": {
+      "allOf": [
+        { "$ref": "#/$defs/resourceEnvelope" },
+        { "type": "object", "properties": { "$id": { "const": "https://worldspeaker.invalid/schema/ability-contracts-v1.json" } } }
+      ]
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "bindingId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]+$",
+      "worldspeakerAsciiOnly": true
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["serverId", "worldId", "characterId", "agentId"],
+      "properties": {
+        "serverId": { "$ref": "#/$defs/bindingId" },
+        "worldId": { "$ref": "#/$defs/bindingId" },
+        "characterId": { "$ref": "#/$defs/bindingId" },
+        "agentId": { "$ref": "#/$defs/bindingId" }
+      }
+    },
+    "grantSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["grantId", "selfTargeting", "otherTargetIds", "dimensions", "maxRangeBlocks", "region", "limits", "allowVisual", "allowDamage", "maxDamage"],
+      "properties": {
+        "grantId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$", "worldspeakerAsciiOnly": true },
+        "selfTargeting": { "const": true },
+        "otherTargetIds": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/uuid" } },
+        "dimensions": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$" } },
+        "maxRangeBlocks": { "type": "number", "exclusiveMinimum": 0, "maximum": 64 },
+        "region": { "oneOf": [{ "$ref": "#/$defs/region" }, { "type": "null" }] },
+        "limits": { "oneOf": [{ "$ref": "#/$defs/observeLimits" }, { "$ref": "#/$defs/lightningLimits" }] },
+        "allowVisual": { "type": "boolean" },
+        "allowDamage": { "type": "boolean" },
+        "maxDamage": { "oneOf": [{ "type": "number", "exclusiveMinimum": 0, "maximum": 5 }, { "type": "null" }] }
+      }
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "maxXExclusive", "minZ", "maxZExclusive"],
+      "properties": {
+        "minX": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "maxXExclusive": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "minZ": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "maxZExclusive": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+      },
+      "worldspeakerMinLessThanMax": [["minX", "maxXExclusive"], ["minZ", "maxZExclusive"]],
+      "description": "Signed safe-integer half-open X/Z columns. The resolver also intersects this with the current world border and checks the entire lightning 9x9 footprint."
+    },
+    "observeLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requesterIntervalMs", "characterIntervalMs"],
+      "properties": {
+        "requesterIntervalMs": { "type": "integer", "minimum": 2000, "maximum": 300000 },
+        "characterIntervalMs": { "type": "integer", "minimum": 250, "maximum": 300000 }
+      }
+    },
+    "lightningLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requesterCooldownMs", "targetCooldownMs", "characterIntervalMs"],
+      "properties": {
+        "requesterCooldownMs": { "type": "integer", "minimum": 30000, "maximum": 300000 },
+        "targetCooldownMs": { "type": "integer", "minimum": 30000, "maximum": 300000 },
+        "characterIntervalMs": { "type": "integer", "minimum": 1000, "maximum": 300000 }
+      }
+    },
+    "discoveryEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contract", "implementationStatus", "qualificationStatus", "availability", "disabledReasons", "policyDisposition", "effectiveGrants"],
+      "properties": {
+        "contract": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/contract" },
+        "implementationStatus": { "const": "UNIMPLEMENTED" },
+        "qualificationStatus": { "const": "UNQUALIFIED" },
+        "availability": { "const": "UNAVAILABLE" },
+        "disabledReasons": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 4,
+          "items": { "enum": ["unimplemented", "unqualified", "no_grant", "explicit_denial", "requester_not_granted"] }
+        },
+        "policyDisposition": { "enum": ["denied", "conditional"] },
+        "effectiveGrants": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/grantSummary" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "policyDisposition": { "const": "denied" } }, "required": ["policyDisposition"] },
+          "then": { "properties": { "effectiveGrants": { "maxItems": 0 } } }
+        },
+        {
+          "if": { "properties": { "policyDisposition": { "const": "conditional" } }, "required": ["policyDisposition"] },
+          "then": { "properties": { "effectiveGrants": { "minItems": 1 }, "disabledReasons": { "contains": { "enum": ["unimplemented", "unqualified"] } } } }
+        }
+      ]
+    },
+    "observeDiscoveryEntry": {
+      "allOf": [
+        { "$ref": "#/$defs/discoveryEntry" },
+        { "type": "object", "properties": {
+          "contract": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/observeContract" },
+          "effectiveGrants": { "items": { "allOf": [{ "$ref": "#/$defs/grantSummary" }, { "properties": { "limits": { "$ref": "#/$defs/observeLimits" } } }] } }
+        } }
+      ]
+    },
+    "lightningDiscoveryEntry": {
+      "allOf": [
+        { "$ref": "#/$defs/discoveryEntry" },
+        { "type": "object", "properties": {
+          "contract": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/lightningContract" },
+          "effectiveGrants": { "items": { "allOf": [{ "$ref": "#/$defs/grantSummary" }, { "properties": { "limits": { "$ref": "#/$defs/lightningLimits" } } }] } }
+        } }
+      ]
+    }
+  }
+}

@@ -1,16 +1,14 @@
 # Compiled class file
 *.class
 
-# Log file
+# Log files
 *.log
 
-# BlueJ files
+# Java tooling
 *.ctxt
-
-# Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Package files
 *.jar
 *.war
 *.nar
@@ -19,6 +17,23 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# JVM crash logs
 hs_err_pid*
 replay_pid*
+
+# Local build and qualification state
+.gradle/
+build/
+.cache/
+.compat-cache/
+companion/node_modules/
+companion/dist/
+companion/*.tgz
+companion/LICENSE
+companion/src/generated/
+docs/qualification/COMPAT-01/runs/*
+!docs/qualification/COMPAT-01/runs/.gitkeep
+
+docs/r**/
+docs/r**/*
+TEMP*.md

@@ -1,0 +1,15 @@
+{
+  "unicodeVersion": "15.0.0",
+  "sourceBaseUrl": "https://www.unicode.org/Public/15.0.0/ucd/",
+  "sources": {
+    "UnicodeData.txt": "806e9aed65037197f1ec85e12be6e8cd870fc5608b4de0fffd990f689f376a73",
+    "DerivedCoreProperties.txt": "d367290bc0867e6b484c68370530bdd1a08b6b32404601b8c7accaf83e05628d",
+    "Scripts.txt": "cca85d830f46aece2e7c1459ef1249993dca8f2e46d51e869255be140d7ea4b0",
+    "IndicSyllabicCategory.txt": "ffae561a51b47ddbbe267fdd8505ac3776b85b2932268809127acee84200b573",
+    "PropList.txt": "e05c0a2811d113dae4abd832884199a3ea8d187ee1b872d8240a788a96540bfd",
+    "emoji-data.txt": "29071dba22c72c27783a73016afb8ffaeb025866740791f9c2d0b55cc45a3470",
+    "ReadMe.txt": "53672c0d0b5185e3cf04c8e970d544c3af81ae7c8eeba0b9cf6d355aa954ae1f",
+    "LICENSE.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+  },
+  "licenseUrl": "https://www.unicode.org/license.txt"
+}

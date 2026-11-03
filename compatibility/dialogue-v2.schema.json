@@ -1,0 +1,139 @@
+{
+  "$schema": "https://worldspeaker.invalid/schema/dialogue-v2-meta-schema.json",
+  "$id": "https://worldspeaker.invalid/schema/dialogue-v2.json",
+  "title": "Worldspeaker attributed dialogue protocol v2",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/ackFrame" },
+    { "$ref": "#/$defs/cancel" },
+    { "$ref": "#/$defs/message" },
+    { "$ref": "#/$defs/failure" }
+  ],
+  "$defs": {
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "bindingString": {
+      "type": "string", "minLength": 1, "maxLength": 512,
+      "worldspeakerMaxUtf16Length": 512,
+      "worldspeakerNonBlankTrim": true
+    },
+    "binding": {
+      "type": "object", "additionalProperties": false,
+      "required": ["serverId", "worldId", "characterId", "agentId"],
+      "properties": {
+        "serverId": { "$ref": "#/$defs/bindingString" },
+        "worldId": { "$ref": "#/$defs/bindingString" },
+        "characterId": { "$ref": "#/$defs/bindingString" },
+        "agentId": { "$ref": "#/$defs/bindingString" }
+      }
+    },
+    "audience": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "playerId"],
+      "properties": { "kind": { "const": "player" }, "playerId": { "$ref": "#/$defs/uuid" } }
+    },
+    "event": {
+      "type": "object", "additionalProperties": false,
+      "required": ["serverId", "worldId", "characterId", "agentId", "eventId", "serverEpochId", "occurredAtUnixMillis", "capturedAtMonotonicNanos", "eventOrigin", "inputKind", "playerId", "playerName", "dimension", "text"],
+      "properties": {
+        "serverId": { "$ref": "#/$defs/bindingString" },
+        "worldId": { "$ref": "#/$defs/bindingString" },
+        "characterId": { "$ref": "#/$defs/bindingString" },
+        "agentId": { "$ref": "#/$defs/bindingString" },
+        "eventId": { "$ref": "#/$defs/uuid" },
+        "serverEpochId": { "$ref": "#/$defs/uuid" },
+        "occurredAtUnixMillis": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "capturedAtMonotonicNanos": {
+          "type": "string", "pattern": "^(?:0|-?[1-9][0-9]*)$", "maxLength": 20,
+          "worldspeakerInt64Range": true
+        },
+        "eventOrigin": { "enum": ["live", "history"] },
+        "inputKind": { "enum": ["command", "natural_address", "followup"] },
+        "playerId": { "$ref": "#/$defs/uuid" },
+        "playerName": {
+          "type": "string", "minLength": 1, "maxLength": 32,
+          "pattern": "^[^\\u0000-\\u001f\\u007f]+$",
+          "worldspeakerMaxUtf16Length": 32,
+          "worldspeakerNonBlankTrim": true
+        },
+        "dimension": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$" },
+        "text": {
+          "type": "string", "minLength": 1, "maxLength": 512,
+          "pattern": "[^\\s]",
+          "not": { "pattern": "[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]" },
+          "worldspeakerMaxUtf16Length": 512,
+          "worldspeakerNonBlankTrim": true
+        }
+      }
+    },
+    "conversation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["conversationId", "replyToMessageId"],
+      "properties": {
+        "conversationId": { "$ref": "#/$defs/uuid" },
+        "replyToMessageId": { "oneOf": [{ "$ref": "#/$defs/uuid" }, { "type": "null" }] }
+      }
+    },
+    "acknowledgement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["messageId", "text", "dispatchedAtUnixMillis", "dispatchedAtMonotonicNanos", "replyAudience"],
+      "properties": {
+        "messageId": { "$ref": "#/$defs/uuid" },
+        "text": {
+          "type": "string", "minLength": 1, "maxLength": 2048,
+          "pattern": "[^\\s]",
+          "not": { "pattern": "[\\u0000-\\u001f\\u007f]" },
+          "worldspeakerMaxUtf16Length": 2048,
+          "worldspeakerNonBlankTrim": true
+        },
+        "dispatchedAtUnixMillis": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "dispatchedAtMonotonicNanos": {
+          "type": "string", "pattern": "^(?:0|-?[1-9][0-9]*)$", "maxLength": 20,
+          "worldspeakerInt64Range": true
+        },
+        "replyAudience": { "$ref": "#/$defs/audience" }
+      }
+    },
+    "request": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "protocol", "requestId", "invocationId", "serverId", "worldId", "characterId", "agentId", "event", "conversation", "replyAudience", "contextBatch", "acknowledgement"],
+      "properties": {
+        "type": { "const": "dialogue.request" }, "protocol": { "const": "worldspeaker.compat.v2" },
+        "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" },
+        "serverId": { "$ref": "#/$defs/bindingString" }, "worldId": { "$ref": "#/$defs/bindingString" },
+        "characterId": { "$ref": "#/$defs/bindingString" }, "agentId": { "$ref": "#/$defs/bindingString" },
+        "event": { "$ref": "#/$defs/event" }, "conversation": { "$ref": "#/$defs/conversation" },
+        "replyAudience": { "$ref": "#/$defs/audience" },
+        "contextBatch": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/event" } },
+        "acknowledgement": { "oneOf": [{ "$ref": "#/$defs/acknowledgement" }, { "type": "null" }] }
+      },
+      "allOf": [{
+        "if": {
+          "properties": { "event": { "type": "object", "properties": { "inputKind": { "const": "followup" } }, "required": ["inputKind"] } },
+          "required": ["event"]
+        },
+        "then": { "properties": { "conversation": { "type": "object", "properties": { "replyToMessageId": { "$ref": "#/$defs/uuid" } } } } },
+        "else": { "properties": { "conversation": { "type": "object", "properties": { "replyToMessageId": { "type": "null" } } } } }
+      }]
+    },
+    "ackFrame": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "protocol", "requestId", "invocationId", "playerId", "acknowledgement"],
+      "properties": { "type": { "const": "dialogue.ack" }, "protocol": { "const": "worldspeaker.compat.v2" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "playerId": { "$ref": "#/$defs/uuid" }, "acknowledgement": { "$ref": "#/$defs/acknowledgement" } }
+    },
+    "cancel": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "protocol", "requestId", "invocationId", "playerId"],
+      "properties": { "type": { "const": "dialogue.cancel" }, "protocol": { "const": "worldspeaker.compat.v2" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "playerId": { "$ref": "#/$defs/uuid" } }
+    },
+    "message": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "protocol", "messageId", "requestId", "invocationId", "characterId", "replyAudience", "kind", "text"],
+      "properties": { "type": { "const": "dialogue.message" }, "protocol": { "const": "worldspeaker.compat.v2" }, "messageId": { "$ref": "#/$defs/uuid" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "characterId": { "$ref": "#/$defs/bindingString" }, "replyAudience": { "$ref": "#/$defs/audience" }, "kind": { "const": "answer" }, "text": { "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "[^\\s]", "not": { "pattern": "[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]" }, "worldspeakerMaxUtf16Length": 2048, "worldspeakerNonBlankTrim": true } }
+    },
+    "failure": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "protocol", "requestId", "invocationId", "characterId", "replyAudience", "reason"],
+      "properties": { "type": { "const": "dialogue.failure" }, "protocol": { "const": "worldspeaker.compat.v2" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "characterId": { "$ref": "#/$defs/bindingString" }, "replyAudience": { "$ref": "#/$defs/audience" }, "reason": { "const": "unavailable" } }
+    }
+  }
+}

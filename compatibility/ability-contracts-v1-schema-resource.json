@@ -1,0 +1,1265 @@
+{
+  "$schema": "https://worldspeaker.invalid/schema/ability-predicates-v1.schema.json",
+  "$id": "https://worldspeaker.invalid/schema/ability-contracts-v1.json",
+  "$defs": {
+    "observeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "abilityId",
+        "contractVersion",
+        "arguments"
+      ],
+      "properties": {
+        "abilityId": {
+          "const": "worldspeaker.core.observe_player"
+        },
+        "contractVersion": {
+          "const": 1
+        },
+        "arguments": {
+          "$ref": "#/$defs/observeArguments"
+        }
+      }
+    },
+    "observeArguments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetPlayerId"
+      ],
+      "properties": {
+        "targetPlayerId": {
+          "$ref": "#/$defs/uuid"
+        }
+      }
+    },
+    "strikeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "abilityId",
+        "contractVersion",
+        "arguments"
+      ],
+      "properties": {
+        "abilityId": {
+          "const": "worldspeaker.core.strike_lightning"
+        },
+        "contractVersion": {
+          "const": 1
+        },
+        "arguments": {
+          "$ref": "#/$defs/strikeArguments"
+        }
+      }
+    },
+    "strikeArguments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetPlayerId"
+      ],
+      "properties": {
+        "targetPlayerId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "visualOnly": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "safeInteger": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9007199254740991
+    },
+    "nullableSafeInteger": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/safeInteger"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "resultState": {
+      "enum": [
+        "rejected",
+        "admitted",
+        "submitted",
+        "executed",
+        "failed",
+        "partial",
+        "expired",
+        "cancelled",
+        "unknown"
+      ]
+    },
+    "reasonCode": {
+      "enum": [
+        "none",
+        "invalid_input",
+        "unsupported_contract",
+        "unsupported_state",
+        "permission_denied",
+        "target_unavailable",
+        "out_of_scope",
+        "protected_area",
+        "stale_context",
+        "rate_limited",
+        "concurrency_limited",
+        "deadline_expired",
+        "cancelled",
+        "storage_unavailable",
+        "execution_unavailable",
+        "execution_failed",
+        "outcome_unknown"
+      ]
+    },
+    "observeFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetPlayerId",
+        "observedAt",
+        "health",
+        "maxHealth",
+        "dimension",
+        "biome",
+        "holdingItem"
+      ],
+      "properties": {
+        "targetPlayerId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "observedAt": {
+          "$ref": "#/$defs/safeInteger"
+        },
+        "health": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 3.4028235e+38,
+          "worldspeakerFloat32": "finite-nonnegative"
+        },
+        "maxHealth": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 3.4028235e+38,
+          "worldspeakerFloat32": "finite-positive"
+        },
+        "dimension": {
+          "$ref": "#/$defs/minecraftIdentifier"
+        },
+        "biome": {
+          "$ref": "#/$defs/minecraftIdentifier"
+        },
+        "holdingItem": {
+          "$ref": "#/$defs/minecraftIdentifier"
+        }
+      },
+      "worldspeakerHealthAtMostMaxHealth": true
+    },
+    "minecraftIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$",
+      "worldspeakerAsciiOnly": true
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "state"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "presentation",
+            "damage"
+          ]
+        },
+        "state": {
+          "enum": [
+            "prevented",
+            "confirmed",
+            "failed",
+            "unknown"
+          ]
+        },
+        "healthRemoved": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "worldspeakerFloat32": "finite-nonnegative"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "absorptionRemoved": {
+          "oneOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 5,
+              "worldspeakerFloat32": "finite-nonnegative"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "damageDisposition": {
+          "oneOf": [
+            {
+              "enum": [
+                "applied",
+                "mitigated",
+                "invulnerable",
+                "protection_veto",
+                "non_lethal_limit"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "worldspeakerDamageStepFields": true
+    },
+    "lightningFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actionId",
+        "targetPlayerId",
+        "dimension",
+        "executedAt",
+        "coordinates",
+        "visualOnly",
+        "steps"
+      ],
+      "properties": {
+        "actionId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "targetPlayerId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "dimension": {
+          "$ref": "#/$defs/minecraftIdentifier"
+        },
+        "executedAt": {
+          "$ref": "#/$defs/nullableSafeInteger"
+        },
+        "coordinates": {
+          "description": "Null means the placement is unknown. A non-null value must be a losslessly representable Minecraft Java 1.21.1 packed BlockPos (X/Z: -33554432..33554431; Y: -2048..2047). This is structural representation validation only, not qualification against the actual dimension build height, current world border, or complete 9x9 footprint. Before authoritative outcome publication, non-null coordinates require a trusted execution-world bounds check; if that context is unavailable, coordinates must remain null.",
+          "oneOf": [
+            {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "integer",
+                  "minimum": -33554432,
+                  "maximum": 33554431
+                },
+                {
+                  "type": "integer",
+                  "minimum": -2048,
+                  "maximum": 2047
+                },
+                {
+                  "type": "integer",
+                  "minimum": -33554432,
+                  "maximum": 33554431
+                }
+              ],
+              "items": false,
+              "minItems": 3,
+              "maxItems": 3,
+              "worldspeakerMinecraft1211BlockPosRepresentation": true
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "visualOnly": {
+          "type": "boolean"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/step"
+          },
+          "minItems": 1,
+          "maxItems": 2
+        }
+      },
+      "worldspeakerLightningFactsSemantics": true
+    },
+    "observeResult": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseResult"
+        },
+        {
+          "type": "object",
+          "required": [
+            "queryId"
+          ],
+          "properties": {
+            "abilityId": {
+              "const": "worldspeaker.core.observe_player"
+            },
+            "queryId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "facts": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/observeFacts"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false,
+      "worldspeakerOutcomeStateFacts": true
+    },
+    "lightningResult": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/baseResult"
+        },
+        {
+          "type": "object",
+          "required": [
+            "actionId"
+          ],
+          "properties": {
+            "abilityId": {
+              "const": "worldspeaker.core.strike_lightning"
+            },
+            "actionId": {
+              "$ref": "#/$defs/uuid"
+            },
+            "facts": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/lightningFacts"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false,
+      "worldspeakerOutcomeStateFacts": true
+    },
+    "baseResult": {
+      "type": "object",
+      "required": [
+        "serverId",
+        "worldId",
+        "characterId",
+        "requestId",
+        "invocationId",
+        "abilityId",
+        "contractVersion",
+        "policyRevision",
+        "serverEpochId",
+        "state",
+        "reasonCode",
+        "facts",
+        "observedAt",
+        "executedAt",
+        "retryAfterMs"
+      ],
+      "properties": {
+        "serverId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "worldId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "characterId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "requestId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "invocationId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "abilityId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "worldspeakerAsciiOnly": true
+        },
+        "contractVersion": {
+          "const": 1
+        },
+        "policyRevision": {
+          "$ref": "#/$defs/safeInteger"
+        },
+        "serverEpochId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "state": {
+          "$ref": "#/$defs/resultState"
+        },
+        "reasonCode": {
+          "$ref": "#/$defs/reasonCode"
+        },
+        "facts": {},
+        "observedAt": {
+          "$ref": "#/$defs/nullableSafeInteger"
+        },
+        "executedAt": {
+          "$ref": "#/$defs/nullableSafeInteger"
+        },
+        "retryAfterMs": {
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 30000
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "required": [
+        "abilityId",
+        "contractVersion",
+        "kind",
+        "purpose",
+        "inputSchema",
+        "resultSchema"
+      ],
+      "properties": {
+        "abilityId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9._:-]+$",
+          "worldspeakerAsciiOnly": true
+        },
+        "contractVersion": {
+          "const": 1
+        },
+        "kind": {
+          "enum": [
+            "query",
+            "effect"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "inputSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "$ref"
+          ],
+          "properties": {
+            "$ref": {
+              "type": "string",
+              "pattern": "^https://worldspeaker\\.invalid/schema/ability-contracts-v1\\.json#/"
+            }
+          }
+        },
+        "resultSchema": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "$ref"
+          ],
+          "properties": {
+            "$ref": {
+              "type": "string",
+              "pattern": "^https://worldspeaker\\.invalid/schema/ability-contracts-v1\\.json#/"
+            }
+          }
+        }
+      }
+    },
+    "permission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "node",
+        "default",
+        "requester",
+        "target",
+        "denialPrecedence",
+        "provider"
+      ],
+      "properties": {
+        "node": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "default": {
+          "const": "deny"
+        },
+        "requester": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "visualGrant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "damageGrant": {
+          "type": "string",
+          "minLength": 1
+        },
+        "denialPrecedence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "bounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "targetCount",
+        "rangeBlocks",
+        "grantRangeBlocks",
+        "inFlightPerRequester",
+        "inFlightPerCharacter",
+        "snapshotsPerRequesterPer2000Ms",
+        "snapshotsPerCharacterPerSecond",
+        "readDeadlineAfterAdmissionMs",
+        "snapshotMaxAgeAtDeliveryMs",
+        "resultUtf8Bytes",
+        "reads",
+        "prohibitedWork"
+      ],
+      "properties": {
+        "targetCount": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "rangeBlocks": {
+          "const": 64
+        },
+        "grantRangeBlocks": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "const": 0
+            },
+            {
+              "const": 64
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "inFlightPerRequester": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "inFlightPerCharacter": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "snapshotsPerRequesterPer2000Ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1
+        },
+        "snapshotsPerCharacterPerSecond": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "readDeadlineAfterAdmissionMs": {
+          "const": 1000
+        },
+        "snapshotMaxAgeAtDeliveryMs": {
+          "const": 2000
+        },
+        "resultUtf8Bytes": {
+          "const": 4096
+        },
+        "reads": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "prohibitedWork": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "oneEffectPerInvocation": {
+          "const": true
+        },
+        "requestAgeMaxMs": {
+          "const": 15000
+        },
+        "actionAdmissionAgeMaxMs": {
+          "const": 5000
+        },
+        "presentationCount": {
+          "const": 1
+        },
+        "presentationLifetimeMaxMs": {
+          "const": 1000
+        },
+        "damageAttemptsMax": {
+          "const": 1
+        },
+        "damageMaxHealthPoints": {
+          "const": 5
+        },
+        "attemptedDamage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "footprintColumns": {
+          "const": 81
+        },
+        "footprintSideBlocks": {
+          "const": 9
+        },
+        "footprintChunksMax": {
+          "const": 4
+        },
+        "cooldownRequesterMs": {
+          "const": 30000
+        },
+        "cooldownTargetMs": {
+          "const": 30000
+        },
+        "effectsPerCharacterPerSecond": {
+          "const": 1
+        },
+        "audioRangeBlocks": {
+          "const": 32
+        },
+        "audioVolumeMax": {
+          "const": 1
+        },
+        "audioRecipientsMax": {
+          "const": 32
+        },
+        "stepsMax": {
+          "const": 2
+        },
+        "prohibitedMutations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "lightningBounds": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "oneEffectPerInvocation",
+        "requestAgeMaxMs",
+        "actionAdmissionAgeMaxMs",
+        "presentationCount",
+        "presentationLifetimeMaxMs",
+        "damageAttemptsMax",
+        "damageMaxHealthPoints",
+        "attemptedDamage",
+        "footprintColumns",
+        "footprintSideBlocks",
+        "footprintChunksMax",
+        "cooldownRequesterMs",
+        "cooldownTargetMs",
+        "effectsPerCharacterPerSecond",
+        "inFlightPerCharacter",
+        "audioRangeBlocks",
+        "audioVolumeMax",
+        "audioRecipientsMax",
+        "stepsMax",
+        "resultUtf8Bytes",
+        "prohibitedMutations"
+      ],
+      "properties": {
+        "oneEffectPerInvocation": {
+          "const": true
+        },
+        "requestAgeMaxMs": {
+          "const": 15000
+        },
+        "actionAdmissionAgeMaxMs": {
+          "const": 5000
+        },
+        "presentationCount": {
+          "const": 1
+        },
+        "presentationLifetimeMaxMs": {
+          "const": 1000
+        },
+        "damageAttemptsMax": {
+          "const": 1
+        },
+        "damageMaxHealthPoints": {
+          "const": 5
+        },
+        "attemptedDamage": {
+          "type": "string",
+          "minLength": 1
+        },
+        "footprintColumns": {
+          "const": 81
+        },
+        "footprintSideBlocks": {
+          "const": 9
+        },
+        "footprintChunksMax": {
+          "const": 4
+        },
+        "cooldownRequesterMs": {
+          "const": 30000
+        },
+        "cooldownTargetMs": {
+          "const": 30000
+        },
+        "effectsPerCharacterPerSecond": {
+          "const": 1
+        },
+        "inFlightPerCharacter": {
+          "const": 1
+        },
+        "audioRangeBlocks": {
+          "const": 32
+        },
+        "audioVolumeMax": {
+          "const": 1
+        },
+        "audioRecipientsMax": {
+          "const": 32
+        },
+        "stepsMax": {
+          "const": 2
+        },
+        "resultUtf8Bytes": {
+          "const": 4096
+        },
+        "prohibitedMutations": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "preconditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request",
+        "target",
+        "scope",
+        "freshness",
+        "revalidation"
+      ],
+      "properties": {
+        "request": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "freshness": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revalidation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "placement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "footprint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "protection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sky": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "lightningPreconditions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request",
+        "target",
+        "placement",
+        "footprint",
+        "protection",
+        "sky",
+        "freshness"
+      ],
+      "properties": {
+        "request": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1
+        },
+        "placement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "footprint": {
+          "type": "string",
+          "minLength": 1
+        },
+        "protection": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sky": {
+          "type": "string",
+          "minLength": 1
+        },
+        "freshness": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "implementationStatus",
+        "qualificationStatus",
+        "availability",
+        "futureThread"
+      ],
+      "properties": {
+        "implementationStatus": {
+          "const": "UNIMPLEMENTED"
+        },
+        "qualificationStatus": {
+          "const": "UNQUALIFIED"
+        },
+        "availability": {
+          "const": "UNAVAILABLE"
+        },
+        "futureThread": {
+          "type": "string",
+          "minLength": 1
+        },
+        "accounting": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeouts": {
+          "type": "string",
+          "minLength": 1
+        },
+        "restart": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reservation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "steps": {
+          "type": "array",
+          "maxItems": 2,
+          "items": {
+            "type": "string"
+          }
+        },
+        "nonlethal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nativeBehavior": {
+          "type": "string",
+          "minLength": 1
+        },
+        "protectionExternalClaimsMode": {
+          "const": [
+            "REQUIRED",
+            "NONE"
+          ]
+        }
+      }
+    },
+    "reliability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "duplicate",
+        "expiry",
+        "retention",
+        "effectJournal"
+      ],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duplicate": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expiry": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retention": {
+          "type": "string",
+          "minLength": 1
+        },
+        "effectJournal": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duplicates": {
+          "type": "string",
+          "minLength": 1
+        },
+        "durability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preOperation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "postOperation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unknown": {
+          "type": "string",
+          "minLength": 1
+        },
+        "restart": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "lightningReliability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity",
+        "duplicates",
+        "durability",
+        "preOperation",
+        "postOperation",
+        "unknown",
+        "restart",
+        "retention"
+      ],
+      "properties": {
+        "identity": {
+          "type": "string",
+          "minLength": 1
+        },
+        "duplicates": {
+          "type": "string",
+          "minLength": 1
+        },
+        "durability": {
+          "type": "string",
+          "minLength": 1
+        },
+        "preOperation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "postOperation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unknown": {
+          "type": "string",
+          "minLength": 1
+        },
+        "restart": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retention": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "routineLogs",
+        "resultAudience"
+      ],
+      "properties": {
+        "excluded": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "string"
+          }
+        },
+        "routineLogs": {
+          "type": "string",
+          "minLength": 1
+        },
+        "snapshotRetention": {
+          "type": "string",
+          "minLength": 1
+        },
+        "privateEvidence": {
+          "type": "array",
+          "maxItems": 12,
+          "items": {
+            "type": "string"
+          }
+        },
+        "resultAudience": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "publicNarration",
+        "receipt"
+      ],
+      "properties": {
+        "publicNarration": {
+          "type": "string",
+          "minLength": 1
+        },
+        "receipt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "audio": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "contract": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/identity"
+        },
+        {
+          "type": "object",
+          "required": [
+            "permission",
+            "bounds",
+            "preconditions",
+            "execution",
+            "reliability",
+            "privacy",
+            "presentation"
+          ],
+          "properties": {
+            "permission": {
+              "$ref": "#/$defs/permission"
+            },
+            "bounds": {
+              "type": "object"
+            },
+            "preconditions": {
+              "type": "object"
+            },
+            "execution": {
+              "$ref": "#/$defs/execution"
+            },
+            "reliability": {
+              "type": "object"
+            },
+            "privacy": {
+              "$ref": "#/$defs/privacy"
+            },
+            "presentation": {
+              "$ref": "#/$defs/presentation"
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "observeContract": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/contract"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "abilityId": {
+              "const": "worldspeaker.core.observe_player"
+            },
+            "kind": {
+              "const": "query"
+            },
+            "inputSchema": {
+              "const": {
+                "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/observeRequest"
+              }
+            },
+            "resultSchema": {
+              "const": {
+                "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/observeResult"
+              }
+            },
+            "bounds": {
+              "$ref": "#/$defs/bounds"
+            },
+            "preconditions": {
+              "$ref": "#/$defs/preconditions"
+            },
+            "reliability": {
+              "$ref": "#/$defs/reliability"
+            }
+          },
+          "required": [
+            "abilityId",
+            "kind",
+            "inputSchema",
+            "resultSchema"
+          ]
+        }
+      ]
+    },
+    "lightningContract": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/contract"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "abilityId": {
+              "const": "worldspeaker.core.strike_lightning"
+            },
+            "kind": {
+              "const": "effect"
+            },
+            "inputSchema": {
+              "const": {
+                "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/strikeRequest"
+              }
+            },
+            "resultSchema": {
+              "const": {
+                "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/lightningResult"
+              }
+            },
+            "bounds": {
+              "$ref": "#/$defs/lightningBounds"
+            },
+            "preconditions": {
+              "$ref": "#/$defs/lightningPreconditions"
+            },
+            "reliability": {
+              "$ref": "#/$defs/lightningReliability"
+            }
+          },
+          "required": [
+            "abilityId",
+            "kind",
+            "inputSchema",
+            "resultSchema"
+          ]
+        }
+      ]
+    }
+  }
+}

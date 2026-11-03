@@ -1,0 +1,300 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://worldspeaker.invalid/schema/resp03-evaluation-v3.json",
+  "title": "Worldspeaker CONV-06 offline evaluation run (closed-vocabulary human review)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "runId", "provenance", "aliasSalt", "aliasIndex", "metadata", "entries", "integrityHash"],
+  "properties": {
+    "schemaVersion": { "const": 3 },
+    "runId": { "$ref": "#/$defs/uuid" },
+    "provenance": { "enum": ["offline_fixture", "human_live"] },
+    "aliasSalt": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+    "aliasIndex": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["players", "turns", "requests"],
+      "properties": {
+        "players": { "$ref": "#/$defs/playerAliasMap" },
+        "turns": { "$ref": "#/$defs/turnAliasMap" },
+        "requests": { "$ref": "#/$defs/requestAliasMap" }
+      }
+    },
+    "metadata": { "$ref": "#/$defs/metadata" },
+    "entries": {
+      "type": "array",
+      "maxItems": 256,
+      "items": { "oneOf": [
+        { "$ref": "#/$defs/numericEvidence" },
+        { "$ref": "#/$defs/sessionAttestation" },
+        { "$ref": "#/$defs/humanReview" }
+      ] }
+    },
+    "integrityHash": { "$ref": "#/$defs/hash" }
+  },
+  "$defs": {
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "hash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "shortLabel": { "type": "string", "minLength": 1, "maxLength": 80, "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._:/+()@-]*$" },
+    "aliasKey": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "playerAlias": { "type": "string", "pattern": "^player-[0-9]{3}$" },
+    "turnAlias": { "type": "string", "pattern": "^turn-[0-9]{3}$" },
+    "requestAlias": { "type": "string", "pattern": "^request-[0-9]{3}$" },
+    "playerAliasMap": { "type": "object", "maxProperties": 3, "propertyNames": { "$ref": "#/$defs/aliasKey" }, "additionalProperties": { "$ref": "#/$defs/playerAlias" } },
+    "turnAliasMap": { "type": "object", "maxProperties": 64, "propertyNames": { "$ref": "#/$defs/aliasKey" }, "additionalProperties": { "$ref": "#/$defs/turnAlias" } },
+    "requestAliasMap": { "type": "object", "maxProperties": 64, "propertyNames": { "$ref": "#/$defs/aliasKey" }, "additionalProperties": { "$ref": "#/$defs/requestAlias" } },
+    "nullableLabel": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/shortLabel" }] },
+    "consentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "approved", "reference", "date", "scope", "approvedByRole"],
+      "properties": {
+        "kind": { "enum": ["shared_game_history", "provider_transfer", "evaluation_records"] },
+        "approved": { "type": "boolean" },
+        "reference": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/shortLabel" }] },
+        "date": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date" }] },
+        "scope": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/shortLabel" }] },
+        "approvedByRole": { "enum": [null, "test_administrator", "independent_evaluator"] }
+      }
+    },
+    "consents": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/consentRecord" } },
+    "isolationApproval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved", "reference", "date", "scope"],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "reference": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/shortLabel" }] },
+        "date": { "oneOf": [{ "type": "null" }, { "type": "string", "format": "date" }] },
+        "scope": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/shortLabel" }] }
+      }
+    },
+    "versions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["worldspeaker", "minecraft", "fabricLoader", "fabricApi", "java", "openclaw", "companion", "node"],
+      "properties": {
+        "worldspeaker": { "$ref": "#/$defs/nullableLabel" },
+        "minecraft": { "$ref": "#/$defs/nullableLabel" },
+        "fabricLoader": { "$ref": "#/$defs/nullableLabel" },
+        "fabricApi": { "$ref": "#/$defs/nullableLabel" },
+        "java": { "$ref": "#/$defs/nullableLabel" },
+        "openclaw": { "$ref": "#/$defs/nullableLabel" },
+        "companion": { "$ref": "#/$defs/nullableLabel" },
+        "node": { "$ref": "#/$defs/nullableLabel" }
+      }
+    },
+    "workload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["durationMinutes", "playerCount"],
+      "properties": {
+        "durationMinutes": { "oneOf": [{ "type": "null" }, { "type": "integer", "minimum": 1, "maximum": 30 }] },
+        "playerCount": { "oneOf": [{ "type": "null" }, { "type": "integer", "minimum": 1, "maximum": 3 }] }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifactHashes", "versions", "modelProviderLabel", "hardwareClass", "workload", "clockBoundary", "personaBriefRevision", "attentionSettings", "consents", "isolationApproval", "humanAttestation", "attestedByRole"],
+      "properties": {
+        "artifactHashes": { "type": "array", "maxItems": 8, "uniqueItems": true, "items": { "$ref": "#/$defs/hash" } },
+        "versions": { "$ref": "#/$defs/versions" },
+        "modelProviderLabel": { "$ref": "#/$defs/nullableLabel" },
+        "hardwareClass": { "$ref": "#/$defs/nullableLabel" },
+        "workload": { "$ref": "#/$defs/workload" },
+        "clockBoundary": { "enum": ["unknown", "server_monotonic_dispatch", "human_observed_client"] },
+        "personaBriefRevision": { "$ref": "#/$defs/nullableLabel" },
+        "attentionSettings": { "$ref": "#/$defs/nullableLabel" },
+        "consents": { "$ref": "#/$defs/consents" },
+        "isolationApproval": { "$ref": "#/$defs/isolationApproval" },
+        "humanAttestation": { "type": "boolean" },
+        "attestedByRole": { "enum": [null, "test_administrator", "independent_evaluator"] }
+      }
+    },
+    "nonnegativeNumber": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "int64String": { "type": "string", "minLength": 1, "maxLength": 20, "pattern": "^(?:0|-?[1-9][0-9]*)$" },
+    "nonnegativeLongString": { "type": "string", "minLength": 1, "maxLength": 19, "pattern": "^(?:0|[1-9][0-9]*)$" },
+    "timestamp": { "$ref": "#/$defs/int64String" },
+    "wallTimestamp": { "$ref": "#/$defs/nonnegativeNumber" },
+    "latencyNumber": { "oneOf": [{ "const": "-1" }, { "$ref": "#/$defs/nonnegativeLongString" }] },
+    "nullableTimestamp": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/timestamp" }] },
+    "nullableWallTimestamp": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/wallTimestamp" }] },
+    "nullableLatency": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/nonnegativeLongString" }] },
+    "counterArray": { "type": "array", "minItems": 39, "maxItems": 39, "items": { "$ref": "#/$defs/nonnegativeNumber" } },
+    "histogram": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "$ref": "#/$defs/nonnegativeNumber" } },
+    "dispatchHistograms": {
+      "type": "array", "minItems": 14, "maxItems": 14,
+      "items": { "type": "array", "minItems": 12, "maxItems": 12, "items": { "$ref": "#/$defs/histogram" } }
+    },
+    "progressRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "status", "latencyNanos"],
+      "properties": {
+        "phase": { "enum": ["queued", "awaiting_answer"] },
+        "status": { "enum": ["dispatched", "failed", "missed", "unknown"] },
+        "latencyNanos": { "$ref": "#/$defs/nonnegativeLongString" }
+      }
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["turnAlias", "capturedAtNanos", "receiptWallTimeUnixMillis", "handlerEnteredAtNanos", "handlerDelayNanos", "admittedAtNanos", "decisionAtNanos", "decisionRecorded", "admissionDelayNanos", "queuedAtNanos", "requestLinkAtNanos", "queueDelayNanos", "fallbackCutoffAtNanos", "deadlineAtNanos", "captureProvenance", "producer", "playerAlias", "requestAlias", "origin", "outcome", "rateLimitStatus", "noticeStatus", "templateRevision", "queueDepthAtAdmission", "firstReplySource", "firstReplyDisposition", "firstDispatchNanos", "firstDispatchAtNanos", "queueAgeAtFirstDispatchNanos", "publicationId", "firstReplyResult", "sendResult", "deadlineSettledAtNanos", "failedDispatches", "unknownDispatches", "progress", "terminalOutcome", "terminalNanos"],
+      "properties": {
+        "turnAlias": { "$ref": "#/$defs/turnAlias" },
+        "capturedAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "receiptWallTimeUnixMillis": { "$ref": "#/$defs/nullableWallTimestamp" },
+        "handlerEnteredAtNanos": { "$ref": "#/$defs/timestamp" },
+        "handlerDelayNanos": { "$ref": "#/$defs/nullableLatency" },
+        "admittedAtNanos": { "$ref": "#/$defs/timestamp" },
+        "decisionAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "decisionRecorded": { "type": "boolean" },
+        "admissionDelayNanos": { "$ref": "#/$defs/nullableLatency" },
+        "queuedAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "requestLinkAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "queueDelayNanos": { "$ref": "#/$defs/nullableLatency" },
+        "fallbackCutoffAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "deadlineAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "captureProvenance": { "enum": ["LIVE_PACKET", "SYNTHETIC_HARNESS", "MISSING_PACKET_RECEIPT"] },
+        "producer": { "enum": ["SIGNED_CHAT", "UNSIGNED_COMMAND", "SIGNED_COMMAND", "SYNTHETIC_HARNESS", "MISSING_PACKET_RECEIPT", "LIVE_PACKET"] },
+        "playerAlias": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/playerAlias" }] },
+        "requestAlias": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/requestAlias" }] },
+        "origin": { "enum": ["COMMAND", "NATURAL_ADDRESS", "FOLLOWUP"] },
+        "outcome": { "enum": ["HELP", "INVALID", "DENIED", "UNAUTHENTICATED", "UNAVAILABLE_BEFORE_BOOTSTRAP", "RECEIPT_EVIDENCE_MISSING", "UNAVAILABLE", "BUSY", "COALESCED", "FOLLOWUP_ENDED", "RATE_LIMITED", "EXPIRED", "ADMITTED"] },
+        "rateLimitStatus": { "enum": ["NOT_RECORDED", "NOT_CHECKED", "ALLOWED", "INVOCATION_LIMITED", "SUBJECT_CAPACITY", "NEW_WORK_LIMITED", "EVIDENCE_UNAVAILABLE", "REPEAT_GUARD", "REPEAT_GUARD_CAPACITY"] },
+        "noticeStatus": { "enum": ["NOT_RECORDED", "NOT_REQUIRED", "QUEUED", "SUPPRESSED", "SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "OVERFLOW"] },
+        "templateRevision": { "$ref": "#/$defs/nullableLabel" },
+        "queueDepthAtAdmission": { "type": "integer", "minimum": 0, "maximum": 17 },
+        "firstReplySource": { "oneOf": [{ "type": "null" }, { "enum": ["LOCAL_ACKNOWLEDGEMENT", "INTEGRATION_ANSWER", "INTEGRATION_FAILURE", "LOCAL_SAFE_RESPONSE", "LOCAL_REJECTION", "LOCAL_UNAVAILABLE", "LOCAL_COALESCED", "COMMAND_HELP", "LOCAL_FOLLOWUP_END", "COMMAND_GUIDANCE", "NATURAL_INVALID", "LOCAL_UNAUTHENTICATED", "LOCAL_DENIED", "LOCAL_BUSY"] }] },
+        "firstReplyDisposition": { "oneOf": [{ "type": "null" }, { "enum": ["ACKNOWLEDGED", "ANSWERED", "FAILED", "REJECTED", "UNAVAILABLE", "COALESCED", "HELP", "FOLLOWUP_ENDED", "INVALID", "DENIED", "UNAUTHENTICATED", "BUSY"] }] },
+        "firstDispatchNanos": { "$ref": "#/$defs/latencyNumber" },
+        "firstDispatchAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "queueAgeAtFirstDispatchNanos": { "$ref": "#/$defs/nullableLatency" },
+        "publicationId": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/uuid" }] },
+        "firstReplyResult": { "enum": ["PENDING", "ON_TIME", "LATE", "NO_DISPATCH_DEADLINE", "NO_DISPATCH_SETTLED", "EVIDENCE_MISSING"] },
+        "sendResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "NO_DISPATCH"] }] },
+        "deadlineSettledAtNanos": { "$ref": "#/$defs/nullableTimestamp" },
+        "failedDispatches": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "unknownDispatches": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "progress": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/progressRecord" } },
+        "terminalOutcome": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "^[A-Z_]{1,32}$" }] },
+        "terminalDeliveryResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "NO_ATTEMPT"] }] },
+        "terminalCause": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[A-Z_]+$" }] },
+        "retirementNoticeResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "NO_AUDIENCE", "SUPPRESSED", "SHUTDOWN"] }] },
+        "localCancelStatus": { "oneOf": [{ "type": "null" }, { "enum": ["NOT_ATTEMPTED", "QUEUED", "DEFINITELY_UNSENT", "SUBMITTED", "UNKNOWN", "SHUTDOWN"] }] },
+        "localCancelSendResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "UNKNOWN"] }] },
+        "providerCancel": { "enum": [null, false] },
+        "lateOutputRejections": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/nonnegativeNumber" }] },
+        "terminalNanos": { "$ref": "#/$defs/latencyNumber" }
+      }
+    },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["index", "counters", "tickHistogram", "firstPublicDispatchHistograms", "maxFirstPublicDispatchNanos", "invocations"],
+      "properties": {
+        "index": { "enum": [0, 1] },
+        "counters": { "$ref": "#/$defs/counterArray" },
+        "tickHistogram": { "$ref": "#/$defs/histogram" },
+        "firstPublicDispatchHistograms": { "$ref": "#/$defs/dispatchHistograms" },
+        "maxFirstPublicDispatchNanos": { "$ref": "#/$defs/nonnegativeLongString" },
+        "invocations": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/invocation" } }
+      }
+    },
+    "numericEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "numericFormatVersion", "sourceSha256", "snapshots"],
+      "properties": {
+        "type": { "const": "numeric_evidence" },
+        "numericFormatVersion": { "const": 2 },
+        "sourceSha256": { "$ref": "#/$defs/hash" },
+        "snapshots": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "$ref": "#/$defs/snapshot" } }
+      }
+    },
+    "sessionAttestation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "sourceSha256", "origin", "humanAttestation", "attestedByRole", "artifactHashes", "versions", "modelProviderLabel", "hardwareClass", "workload", "clockBoundary", "personaBriefRevision", "attentionSettings", "consents", "isolationApproval", "discoveries"],
+      "properties": {
+        "type": { "const": "session_attestation" },
+        "sourceSha256": { "$ref": "#/$defs/hash" },
+        "origin": { "const": "human_live" },
+        "humanAttestation": { "const": true },
+        "attestedByRole": { "enum": ["test_administrator", "independent_evaluator"] },
+        "artifactHashes": { "type": "array", "minItems": 1, "maxItems": 8, "uniqueItems": true, "items": { "$ref": "#/$defs/hash" } },
+        "versions": { "$ref": "#/$defs/versions" },
+        "modelProviderLabel": { "$ref": "#/$defs/shortLabel" },
+        "hardwareClass": { "$ref": "#/$defs/shortLabel" },
+        "workload": { "type": "object", "additionalProperties": false, "required": ["durationMinutes", "playerCount"], "properties": { "durationMinutes": { "type": "integer", "minimum": 1, "maximum": 30 }, "playerCount": { "type": "integer", "minimum": 1, "maximum": 3 } } },
+        "clockBoundary": { "enum": ["unknown", "server_monotonic_dispatch", "human_observed_client"] },
+        "personaBriefRevision": { "$ref": "#/$defs/shortLabel" },
+        "attentionSettings": { "$ref": "#/$defs/shortLabel" },
+        "consents": { "$ref": "#/$defs/consents" },
+        "isolationApproval": { "$ref": "#/$defs/isolationApproval" },
+        "discoveries": { "type": "array", "maxItems": 3, "items": { "type": "object", "additionalProperties": false, "required": ["playerRole", "success", "seconds", "helpProvided"], "properties": { "playerRole": { "enum": ["player_1", "player_2", "player_3"] }, "success": { "type": "boolean" }, "seconds": { "type": "integer", "minimum": 0, "maximum": 120 }, "helpProvided": { "type": "boolean" } } } }
+      }
+    },
+    "ratings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["personaPremiseFit", "contextCoherence", "answerQuality", "discoverability", "enjoyment"],
+      "properties": {
+        "personaPremiseFit": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "contextCoherence": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "answerQuality": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "discoverability": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "enjoyment": { "type": "integer", "minimum": 1, "maximum": 5 }
+      }
+    },
+    "reviewReasonCode": { "enum": ["persona_premise_fit", "context_coherence", "answer_relevance", "answer_quality", "discoverability", "enjoyment", "clarity", "progress_visibility", "reliability", "latency", "safety_or_privacy", "mixed_or_inconclusive_evidence"] },
+    "reviewWeaknessCode": { "enum": ["none_observed", "unclear_or_incomplete_answer", "irrelevant_or_off_topic_answer", "unresolved_exchange", "missing_or_late_feedback", "discovery_barrier", "persona_or_context_mismatch", "technical_failure", "safety_or_privacy_concern", "other_observed_issue"] },
+    "prioritizedWeaknessCode": { "enum": ["unclear_or_incomplete_answer", "irrelevant_or_off_topic_answer", "unresolved_exchange", "missing_or_late_feedback", "discovery_barrier", "persona_or_context_mismatch", "technical_failure", "safety_or_privacy_concern", "other_observed_issue"] },
+    "decisionReasonCode": { "enum": ["quality_criteria_supported", "quality_criteria_not_supported", "required_evidence_missing", "safety_or_privacy_blocker", "mixed_evidence", "other_observed_issue"] },
+    "scenarioId": { "enum": ["unaided-discovery", "personal-advice", "context-follow-up", "shared-fictional-fact", "incomplete-old-attention", "absent-world-ability", "changed-situation", "burst-and-distinct-question", "bounded-delay-or-failure", "free-conversation", "supported-tool-heavy-work"] },
+    "terminalClassification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["turnAlias", "classification"],
+      "properties": {
+        "turnAlias": { "$ref": "#/$defs/turnAlias" },
+        "classification": { "enum": ["relevant_answer", "explained_limitation", "off_topic", "receipt_only", "safe_technical_failure", "unresolved"] },
+        "scenarioId": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/scenarioId" }] },
+        "clientDisplay": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["observation", "elapsedMs", "method"],
+          "properties": {
+            "observation": { "enum": ["displayed", "not_displayed", "unknown"] },
+            "elapsedMs": { "oneOf": [{ "type": "null" }, { "type": "integer", "minimum": 0, "maximum": 1800000 }] },
+            "method": { "enum": [null, "human_stopwatch"] }
+          }
+        }
+      }
+    },
+    "humanReview": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "sourceSha256", "reviewerRole", "scenarioIds", "ratings", "reasonCodes", "weaknessCodes", "terminalClassifications"],
+      "properties": {
+        "type": { "const": "human_review" },
+        "sourceSha256": { "$ref": "#/$defs/hash" },
+        "reviewerRole": { "enum": ["player_1", "player_2", "player_3", "independent_evaluator"] },
+         "scenarioIds": { "type": "array", "minItems": 1, "maxItems": 11, "uniqueItems": true, "items": { "$ref": "#/$defs/scenarioId" } },
+        "ratings": { "$ref": "#/$defs/ratings" },
+        "reasonCodes": { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "$ref": "#/$defs/reviewReasonCode" } },
+        "weaknessCodes": { "type": "array", "minItems": 1, "maxItems": 5, "uniqueItems": true, "items": { "$ref": "#/$defs/reviewWeaknessCode" } },
+        "terminalClassifications": { "type": "array", "maxItems": 64, "items": { "$ref": "#/$defs/terminalClassification" } },
+        "decision": { "enum": ["supported", "not_supported", "blocked", "inconclusive"] },
+        "decisionReasonCodes": { "type": "array", "minItems": 1, "maxItems": 3, "uniqueItems": true, "items": { "$ref": "#/$defs/decisionReasonCode" } },
+        "prioritizedWeaknessCodes": { "type": "array", "maxItems": 3, "uniqueItems": true, "items": { "$ref": "#/$defs/prioritizedWeaknessCode" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "reviewerRole": { "const": "independent_evaluator" } }, "required": ["reviewerRole"] }, "then": { "required": ["decision", "decisionReasonCodes", "prioritizedWeaknessCodes"] } },
+        { "if": { "properties": { "reviewerRole": { "enum": ["player_1", "player_2", "player_3"] } }, "required": ["reviewerRole"] }, "then": { "not": { "anyOf": [{ "required": ["decision"] }, { "required": ["decisionReasonCodes"] }, { "required": ["prioritizedWeaknessCodes"] }] } } },
+        { "if": { "properties": { "weaknessCodes": { "contains": { "const": "none_observed" } } }, "required": ["weaknessCodes"] }, "then": { "properties": { "weaknessCodes": { "maxItems": 1 } } } }
+      ]
+    }
+  }
+}

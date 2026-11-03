@@ -1,0 +1,90 @@
+{
+  "description": "Shared strict request-intent vectors for Java and TypeScript production validators. These test parsing only; no vector authorizes world work.",
+  "vectors": [
+    {
+      "name": "observe-player-v1",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "none"
+    },
+    {
+      "name": "strike-lightning-v1-default-visual-only",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "none"
+    },
+    {
+      "name": "strike-lightning-v1-explicit-damage-intent",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\",\"visualOnly\":false}}",
+      "reasonCode": "none"
+    },
+    {
+      "name": "mathematical-integer-exponent-version",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1e0,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "none"
+    },
+    {
+      "name": "unknown-contract-id",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.unknown\",\"contractVersion\":1,\"arguments\":{}}",
+      "reasonCode": "unsupported_contract"
+    },
+    {
+      "name": "unknown-contract-version",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":2,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "unsupported_contract"
+    },
+    {
+      "name": "rounding-hidden-contract-version-fraction",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1.0000000000000001,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "missing-required-target",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "uppercase-noncanonical-target-uuid",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000AB\"}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "forbidden-operator-authority-field",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\",\"operator\":true}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "forbidden-top-level-requester-field",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterId\":\"00000000-0000-4000-8000-000000000041\",\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "duplicate-decoded-envelope-key",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"ability\\u0049d\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "nested-duplicate-decoded-argument-key",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\",\"visualOnly\":true,\"visual\\u004fnly\":false}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "trailing-json-value",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"}}{}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "malformed-escape",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"\\x0000000-0000-4000-8000-0000000000ab\"}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "excessive-nesting",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\"},\"ignored\":{\"x\":{\"x\":{\"x\":{\"x\":{\"x\":{\"x\":{\"x\":{}}}}}}}}}}",
+      "reasonCode": "invalid_input"
+    },
+    {
+      "name": "null-visual-mode-is-not-defaulted",
+      "rawJson": "{\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"arguments\":{\"targetPlayerId\":\"00000000-0000-4000-8000-0000000000ab\",\"visualOnly\":null}}",
+      "reasonCode": "invalid_input"
+    }
+  ]
+}

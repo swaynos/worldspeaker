@@ -1,0 +1,26 @@
+{
+  "description": "Canonical UUID syntax for startup-config v1 player and ability-policy ID lists only. Accept exactly lowercase 8-4-4-4-12 hexadecimal spelling, without restricting version or variant bits. This corpus is not the Dialogue wire UUID contract and does not assert player authentication or profile membership.",
+  "valid": [
+    { "name": "nil UUID", "value": "00000000-0000-0000-0000-000000000000" },
+    { "name": "version 7 UUID", "value": "01890f3e-7b2c-7abc-8def-0123456789ab" },
+    { "name": "version 6 UUID", "value": "1ec9414c-232a-6b7e-8f9a-bcdef0123456" },
+    { "name": "version 8 UUID", "value": "12345678-1234-8abc-8def-0123456789ab" },
+    { "name": "variant zero UUID", "value": "00000000-0000-4000-0000-000000000041" },
+    { "name": "unknown version and variant bits", "value": "ffffffff-ffff-f0ff-0fff-ffffffffffff" }
+  ],
+  "invalidItems": [
+    { "name": "uppercase spelling is not canonical", "value": "00000000-0000-4000-8000-0000000000AB" },
+    { "name": "abbreviated groups are not canonical", "value": "1-1-1-1-1" },
+    { "name": "non-UUID text", "value": "not-a-uuid" },
+    { "name": "number is not a UUID string", "value": 17 },
+    { "name": "object is not a UUID string", "value": {} },
+    { "name": "nested array is not a UUID string", "value": [] },
+    { "name": "null is not a UUID string", "value": null }
+  ],
+  "invalidLists": [
+    { "name": "number is not a UUID list", "value": 17 },
+    { "name": "object is not a UUID list", "value": {} },
+    { "name": "string is not a UUID list", "value": "00000000-0000-4000-8000-000000000041" },
+    { "name": "null is not a UUID list", "value": null }
+  ]
+}

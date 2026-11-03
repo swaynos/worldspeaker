@@ -1,0 +1,124 @@
+{
+  "description": "One raw policy corpus for the canonical startup schema and the production TypeScript/Java parsers. Limits are optional; when present, their closed field set and bounds are selected by the exact known abilityId@contractVersion. JSON Schema tests validate parsed values, not original numeric token spelling.",
+  "valid": [
+    {
+      "name": "legacy observe grant omits limits",
+      "expectedLimits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 },
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-legacy\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"]}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "legacy lightning grant omits limits",
+      "expectedLimits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 },
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-legacy\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "empty observe limits retain defaults",
+      "expectedLimits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 },
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-empty\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "empty lightning limits retain defaults",
+      "expectedLimits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 },
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-empty\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "observe lower bounds requester 2000 and shared character 250",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-minimums\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":2000,\"characterIntervalMs\":250}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning lower bounds cooldown 30000 and shared character 1000",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-minimums\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"requesterCooldownMs\":30000,\"targetCooldownMs\":30000,\"characterIntervalMs\":1000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "observe all limits at maximum 300000",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-maximums\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":300000,\"characterIntervalMs\":300000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning all limits at maximum 300000",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-maximums\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"requesterCooldownMs\":300000,\"targetCooldownMs\":300000,\"characterIntervalMs\":300000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "mathematical integer decimal and exponent spellings",
+      "rawPolicyJson": "{\"schemaVersion\":1.0,\"revision\":0,\"grants\":[{\"id\":\"observe-integral-numbers\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1e0,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":2e3,\"characterIntervalMs\":2.50e2}}],\"denials\":[],\"protection\":{}}"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "original defect observe grant with lightning requester cooldown key",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-lightning-key\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterCooldownMs\":30000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "reverse defect lightning grant with observe requester interval key",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-observe-key\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"requesterIntervalMs\":2000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "mixed observe and lightning keys on observe grant",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-mixed-keys\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":2000,\"targetCooldownMs\":30000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "mixed observe and lightning keys on lightning grant",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-mixed-keys\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"requesterCooldownMs\":30000,\"requesterIntervalMs\":2000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "observe character interval below its 250 minimum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-character-too-small\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"characterIntervalMs\":249}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning character interval below its 1000 minimum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-character-too-small\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"characterIntervalMs\":999}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "observe requester interval below its 2000 minimum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-requester-too-small\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":1999}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning requester cooldown below its 30000 minimum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-requester-too-small\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"requesterCooldownMs\":29999}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning target cooldown below its 30000 minimum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-target-too-small\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"targetCooldownMs\":29999}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "observe requester interval above 300000 maximum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-requester-too-large\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":300001}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "observe character interval above 300000 maximum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-character-too-large\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"characterIntervalMs\":300001}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning requester cooldown above 300000 maximum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-requester-too-large\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"requesterCooldownMs\":300001}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning target cooldown above 300000 maximum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-target-too-large\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"targetCooldownMs\":300001}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "lightning character interval above 300000 maximum",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-character-too-large\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"characterIntervalMs\":300001}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "unknown observe limits key",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-unknown-limit\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"arbitraryQuantity\":1}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "unknown lightning limits key",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"lightning-unknown-limit\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"limits\":{\"arbitraryQuantity\":1}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "unknown ability remains unsupported",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"unknown-ability\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.other\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":2000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "known ability with unsupported contract version remains rejected",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"wrong-contract-version\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":2,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":2000}}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "raw fractional precision above observe minimum is rejected by runtime token checks",
+      "rawPolicyJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"observe-raw-fraction\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"limits\":{\"requesterIntervalMs\":2000.0000000000001}}],\"denials\":[],\"protection\":{}}",
+      "schemaScope": "parsed-number-projection"
+    }
+  ]
+}

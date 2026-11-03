@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "worldspeaker",
+  "version": "${version}",
+  "name": "Worldspeaker",
+  "description": "Server-only compatibility foundation for Worldspeaker.",
+  "environment": "server",
+  "entrypoints": {
+    "main": ["org.worldspeaker.WorldspeakerServer"]
+  },
+  "mixins": [
+    "worldspeaker.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": "${fabricLoaderVersion}",
+    "minecraft": "${minecraftVersion}",
+    "java": ">=21",
+    "fabric-api": "${fabricApiVersion}"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "name": "@worldspeaker/openclaw-channel",
+  "version": "0.1.0-dev.1",
+  "description": "Server-bound native OpenClaw channel for Worldspeaker.",
+  "type": "module",
+  "license": "GPL-3.0-only",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "peerDependencies": {
+    "openclaw": "2026.10.8"
+  },
+  "dependencies": {
+    "ajv": "8.17.1",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "@types/ws": "8.18.1",
+    "ajv-formats": "3.0.1",
+    "openclaw": "2026.10.8",
+    "typescript": "5.9.3"
+  },
+  "overrides": {
+    "@types/node": "24.10.0"
+  },
+  "scripts": {
+    "prebuild": "node ../tools/compat/generate-companion-facts.mjs && node ../tools/abilities/generate-ability-contracts.mjs --check && node ../tools/unicode/generate-public-body-unicode.mjs --check",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "npm run prebuild && tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node ../tools/presets/build-god-preset.mjs --write && node --test dist/test/*.test.js && node --test test/authority-id-schema.test.mjs test/packed-runtime.test.mjs",
+    "prepack": "node ../tools/presets/build-god-preset.mjs --write",
+    "pack:candidate": "npm run build && node ../tools/presets/build-god-preset.mjs --write && npm pack --ignore-scripts --pack-destination ."
+  },
+  "files": [
+    "dist/",
+    "compatibility/",
+    "openclaw.plugin.json",
+    "README.md",
+    "LICENSE",
+    "presets/worldspeaker-god-preset-v1.zip"
+  ],
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ],
+    "compat": {
+      "pluginApi": "=2026.10.8",
+      "minGatewayVersion": "=2026.10.8"
+    },
+    "build": {
+      "openclawVersion": "2026.10.8",
+      "pluginSdkVersion": "2026.10.8"
+    },
+    "channel": {
+      "id": "worldspeaker",
+      "label": "Worldspeaker",
+      "blurb": "Authenticated Minecraft server conversation channel."
+    }
+  }
+}

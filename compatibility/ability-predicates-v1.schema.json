@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worldspeaker.invalid/schema/ability-predicates-v1.schema.json",
+  "$dynamicAnchor": "meta",
+  "$vocabulary": {
+    "https://json-schema.org/draft/2020-12/vocab/core": true,
+    "https://json-schema.org/draft/2020-12/vocab/applicator": true,
+    "https://json-schema.org/draft/2020-12/vocab/unevaluated": true,
+    "https://json-schema.org/draft/2020-12/vocab/validation": true,
+    "https://json-schema.org/draft/2020-12/vocab/meta-data": false,
+    "https://json-schema.org/draft/2020-12/vocab/format-annotation": false,
+    "https://worldspeaker.invalid/vocab/ability-predicates-v1": true
+  },
+  "allOf": [
+    { "$ref": "https://json-schema.org/draft/2020-12/schema" }
+  ],
+  "properties": {
+    "worldspeakerAsciiOnly": { "type": "boolean" },
+    "worldspeakerFloat32": {
+      "enum": ["finite-nonnegative", "finite-positive"],
+      "description": "Require a finite canonical binary32 wire value: the exact mathematical value of the raw decimal token must equal either Java Float.toString(f) or ECMAScript JSON.stringify(Math.fround(f)) for the same float32 f. Normalize to f; reject other decimal rounding, nonzero-to-zero underflow, and overflow. Bounds remain separate; never clamp. JSON.stringify(-0) emits 0 and loses the negative-zero sign."
+    },
+    "worldspeakerHealthAtMostMaxHealth": { "type": "boolean" },
+    "worldspeakerMinecraft1211BlockPosRepresentation": { "type": "boolean" },
+    "worldspeakerDamageStepFields": { "type": "boolean" },
+    "worldspeakerLightningFactsSemantics": { "type": "boolean" },
+    "worldspeakerOutcomeStateFacts": { "type": "boolean" }
+  }
+}

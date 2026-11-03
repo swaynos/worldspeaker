@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8.5",
+  "package": "org.worldspeaker.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "refmap": "worldspeaker-refmap.json",
+  "mixins": [
+    "ServerCommandSourceOutputAccessor",
+    "ChatMessageC2SPacketCaptureMixin",
+    "CommandExecutionC2SPacketCaptureMixin",
+    "ChatCommandSignedC2SPacketCaptureMixin",
+    "SignedMessageCaptureMixin",
+    "ServerPlayNetworkHandlerInvocationMixin"
+  ]
+}

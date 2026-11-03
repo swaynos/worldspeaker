@@ -1,0 +1,595 @@
+{
+  "schemaVersion": 1,
+  "generator": {
+    "runtime": "OpenJDK 21.0.3+9",
+    "method": "java.lang.Float.toString(float)",
+    "randomSeed": "0x5eedc0de",
+    "randomFiniteSamples": 32,
+    "ecmascriptRuntime": "Node v24.22.1"
+  },
+  "float32Serializations": [
+    {
+      "name": "positive-zero",
+      "bits": "00000000",
+      "javaText": "0.0",
+      "nodeJsonText": "0"
+    },
+    {
+      "name": "negative-zero",
+      "bits": "80000000",
+      "javaText": "-0.0",
+      "nodeJsonText": "0"
+    },
+    {
+      "name": "minimum-subnormal",
+      "bits": "00000001",
+      "javaText": "1.4E-45",
+      "nodeJsonText": "1.401298464324817e-45"
+    },
+    {
+      "name": "subnormal-next",
+      "bits": "00000002",
+      "javaText": "2.8E-45",
+      "nodeJsonText": "2.802596928649634e-45"
+    },
+    {
+      "name": "subnormal-midpoint",
+      "bits": "003fffff",
+      "javaText": "5.87747E-39",
+      "nodeJsonText": "5.877470352812973e-39"
+    },
+    {
+      "name": "maximum-subnormal",
+      "bits": "007fffff",
+      "javaText": "1.1754942E-38",
+      "nodeJsonText": "1.1754942106924411e-38"
+    },
+    {
+      "name": "minimum-normal",
+      "bits": "00800000",
+      "javaText": "1.1754944E-38",
+      "nodeJsonText": "1.1754943508222875e-38"
+    },
+    {
+      "name": "minimum-normal-next",
+      "bits": "00800001",
+      "javaText": "1.1754945E-38",
+      "nodeJsonText": "1.175494490952134e-38"
+    },
+    {
+      "name": "one",
+      "bits": "3f800000",
+      "javaText": "1.0",
+      "nodeJsonText": "1"
+    },
+    {
+      "name": "negative-one",
+      "bits": "bf800000",
+      "javaText": "-1.0",
+      "nodeJsonText": "-1"
+    },
+    {
+      "name": "positive-point-one",
+      "bits": "3dcccccd",
+      "javaText": "0.1",
+      "nodeJsonText": "0.10000000149011612"
+    },
+    {
+      "name": "positive-point-three",
+      "bits": "3e99999a",
+      "javaText": "0.3",
+      "nodeJsonText": "0.30000001192092896"
+    },
+    {
+      "name": "health-twenty-one",
+      "bits": "41a80000",
+      "javaText": "21.0",
+      "nodeJsonText": "21"
+    },
+    {
+      "name": "maximum-finite",
+      "bits": "7f7fffff",
+      "javaText": "3.4028235E38",
+      "nodeJsonText": "3.4028234663852886e+38"
+    },
+    {
+      "name": "maximum-finite-next-down",
+      "bits": "7f7ffffe",
+      "javaText": "3.4028233E38",
+      "nodeJsonText": "3.4028232635611926e+38"
+    },
+    {
+      "name": "mantissa-quarter",
+      "bits": "3fa00000",
+      "javaText": "1.25",
+      "nodeJsonText": "1.25"
+    },
+    {
+      "name": "mantissa-half",
+      "bits": "3fc00000",
+      "javaText": "1.5",
+      "nodeJsonText": "1.5"
+    },
+    {
+      "name": "mantissa-tie-even",
+      "bits": "489d74c4",
+      "javaText": "322470.12",
+      "nodeJsonText": "322470.125"
+    },
+    {
+      "name": "power-two-minus149",
+      "bits": "00000001",
+      "javaText": "1.4E-45",
+      "nodeJsonText": "1.401298464324817e-45"
+    },
+    {
+      "name": "power-two-minus140",
+      "bits": "00000200",
+      "javaText": "7.17E-43",
+      "nodeJsonText": "7.174648137343064e-43"
+    },
+    {
+      "name": "power-two-minus126",
+      "bits": "00800000",
+      "javaText": "1.1754944E-38",
+      "nodeJsonText": "1.1754943508222875e-38"
+    },
+    {
+      "name": "power-two-minus100",
+      "bits": "0d800000",
+      "javaText": "7.888609E-31",
+      "nodeJsonText": "7.888609052210118e-31"
+    },
+    {
+      "name": "power-two-minus64",
+      "bits": "1f800000",
+      "javaText": "5.421011E-20",
+      "nodeJsonText": "5.421010862427522e-20"
+    },
+    {
+      "name": "power-two-minus32",
+      "bits": "2f800000",
+      "javaText": "2.3283064E-10",
+      "nodeJsonText": "2.3283064365386963e-10"
+    },
+    {
+      "name": "power-two-minus16",
+      "bits": "37800000",
+      "javaText": "1.5258789E-5",
+      "nodeJsonText": "0.0000152587890625"
+    },
+    {
+      "name": "power-two-minus4",
+      "bits": "3d800000",
+      "javaText": "0.0625",
+      "nodeJsonText": "0.0625"
+    },
+    {
+      "name": "power-two-minus3",
+      "bits": "3e000000",
+      "javaText": "0.125",
+      "nodeJsonText": "0.125"
+    },
+    {
+      "name": "power-two-minus1",
+      "bits": "3f000000",
+      "javaText": "0.5",
+      "nodeJsonText": "0.5"
+    },
+    {
+      "name": "power-two-0",
+      "bits": "3f800000",
+      "javaText": "1.0",
+      "nodeJsonText": "1"
+    },
+    {
+      "name": "power-two-1",
+      "bits": "40000000",
+      "javaText": "2.0",
+      "nodeJsonText": "2"
+    },
+    {
+      "name": "power-two-3",
+      "bits": "41000000",
+      "javaText": "8.0",
+      "nodeJsonText": "8"
+    },
+    {
+      "name": "power-two-7",
+      "bits": "43000000",
+      "javaText": "128.0",
+      "nodeJsonText": "128"
+    },
+    {
+      "name": "power-two-10",
+      "bits": "44800000",
+      "javaText": "1024.0",
+      "nodeJsonText": "1024"
+    },
+    {
+      "name": "power-two-16",
+      "bits": "47800000",
+      "javaText": "65536.0",
+      "nodeJsonText": "65536"
+    },
+    {
+      "name": "power-two-24",
+      "bits": "4b800000",
+      "javaText": "1.6777216E7",
+      "nodeJsonText": "16777216"
+    },
+    {
+      "name": "power-two-31",
+      "bits": "4f000000",
+      "javaText": "2.1474836E9",
+      "nodeJsonText": "2147483648"
+    },
+    {
+      "name": "power-two-63",
+      "bits": "5f000000",
+      "javaText": "9.223372E18",
+      "nodeJsonText": "9223372036854776000"
+    },
+    {
+      "name": "power-two-100",
+      "bits": "71800000",
+      "javaText": "1.2676506E30",
+      "nodeJsonText": "1.2676506002282294e+30"
+    },
+    {
+      "name": "power-two-127",
+      "bits": "7f000000",
+      "javaText": "1.7014118E38",
+      "nodeJsonText": "1.7014118346046923e+38"
+    },
+    {
+      "name": "seeded-random-00",
+      "bits": "b5767046",
+      "javaText": "-9.180552E-7",
+      "nodeJsonText": "-9.180552069665282e-7"
+    },
+    {
+      "name": "seeded-random-01",
+      "bits": "a0867f49",
+      "javaText": "-2.2784713E-19",
+      "nodeJsonText": "-2.2784713237227875e-19"
+    },
+    {
+      "name": "seeded-random-02",
+      "bits": "547260bd",
+      "javaText": "4.1640203E12",
+      "nodeJsonText": "4164020338688"
+    },
+    {
+      "name": "seeded-random-03",
+      "bits": "3d973cf8",
+      "javaText": "0.07384676",
+      "nodeJsonText": "0.07384675741195679"
+    },
+    {
+      "name": "seeded-random-04",
+      "bits": "0bddc814",
+      "javaText": "8.542715E-32",
+      "nodeJsonText": "8.542714764516141e-32"
+    },
+    {
+      "name": "seeded-random-05",
+      "bits": "323530d0",
+      "javaText": "1.0546685E-8",
+      "nodeJsonText": "1.0546685302870173e-8"
+    },
+    {
+      "name": "seeded-random-06",
+      "bits": "ceae6e59",
+      "javaText": "-1.4632337E9",
+      "nodeJsonText": "-1463233664"
+    },
+    {
+      "name": "seeded-random-07",
+      "bits": "d07c40a9",
+      "javaText": "-1.6928384E10",
+      "nodeJsonText": "-16928384000"
+    },
+    {
+      "name": "seeded-random-08",
+      "bits": "f0d06a91",
+      "javaText": "-5.160137E29",
+      "nodeJsonText": "-5.160137033828715e+29"
+    },
+    {
+      "name": "seeded-random-09",
+      "bits": "0103d249",
+      "javaText": "2.4211772E-38",
+      "nodeJsonText": "2.4211772193853693e-38"
+    },
+    {
+      "name": "seeded-random-10",
+      "bits": "fdb94eea",
+      "javaText": "-3.0789616E37",
+      "nodeJsonText": "-3.07896155573778e+37"
+    },
+    {
+      "name": "seeded-random-11",
+      "bits": "9ea998b4",
+      "javaText": "-1.7956728E-20",
+      "nodeJsonText": "-1.7956727542985225e-20"
+    },
+    {
+      "name": "seeded-random-12",
+      "bits": "a5fb43bd",
+      "javaText": "-4.358746E-16",
+      "nodeJsonText": "-4.358746049182516e-16"
+    },
+    {
+      "name": "seeded-random-13",
+      "bits": "f490d677",
+      "javaText": "-9.180183E31",
+      "nodeJsonText": "-9.180183245062693e+31"
+    },
+    {
+      "name": "seeded-random-14",
+      "bits": "9d85404a",
+      "javaText": "-3.527128E-21",
+      "nodeJsonText": "-3.527128020288087e-21"
+    },
+    {
+      "name": "seeded-random-15",
+      "bits": "13177db5",
+      "javaText": "1.9120858E-27",
+      "nodeJsonText": "1.912085782167997e-27"
+    },
+    {
+      "name": "seeded-random-16",
+      "bits": "2d6dae5b",
+      "javaText": "1.3510605E-11",
+      "nodeJsonText": "1.3510604961186612e-11"
+    },
+    {
+      "name": "seeded-random-17",
+      "bits": "982cf808",
+      "javaText": "-2.2355703E-24",
+      "nodeJsonText": "-2.2355702742457402e-24"
+    },
+    {
+      "name": "seeded-random-18",
+      "bits": "1a0fae23",
+      "javaText": "2.9712373E-23",
+      "nodeJsonText": "2.971237341994613e-23"
+    },
+    {
+      "name": "seeded-random-19",
+      "bits": "ac24c370",
+      "javaText": "-2.3414291E-12",
+      "nodeJsonText": "-2.3414291339118876e-12"
+    },
+    {
+      "name": "seeded-random-20",
+      "bits": "c8aef21b",
+      "javaText": "-358288.84",
+      "nodeJsonText": "-358288.84375"
+    },
+    {
+      "name": "seeded-random-21",
+      "bits": "078646e6",
+      "javaText": "2.020375E-34",
+      "nodeJsonText": "2.0203749461685564e-34"
+    },
+    {
+      "name": "seeded-random-22",
+      "bits": "239f56b1",
+      "javaText": "1.727553E-17",
+      "nodeJsonText": "1.72755297811883e-17"
+    },
+    {
+      "name": "seeded-random-23",
+      "bits": "cbc4984b",
+      "javaText": "-2.5768086E7",
+      "nodeJsonText": "-25768086"
+    },
+    {
+      "name": "seeded-random-24",
+      "bits": "cd2afffa",
+      "javaText": "-1.793064E8",
+      "nodeJsonText": "-179306400"
+    },
+    {
+      "name": "seeded-random-25",
+      "bits": "766636cd",
+      "javaText": "1.167324E33",
+      "nodeJsonText": "1.167323993510667e+33"
+    },
+    {
+      "name": "seeded-random-26",
+      "bits": "043977cc",
+      "javaText": "2.1801654E-36",
+      "nodeJsonText": "2.1801653517481328e-36"
+    },
+    {
+      "name": "seeded-random-27",
+      "bits": "588447fc",
+      "javaText": "1.1635576E15",
+      "nodeJsonText": "1163557643223040"
+    },
+    {
+      "name": "seeded-random-28",
+      "bits": "f68410e9",
+      "javaText": "-1.3393089E33",
+      "nodeJsonText": "-1.3393089141447685e+33"
+    },
+    {
+      "name": "seeded-random-29",
+      "bits": "0929831d",
+      "javaText": "2.0404284E-33",
+      "nodeJsonText": "2.0404284206161038e-33"
+    },
+    {
+      "name": "seeded-random-30",
+      "bits": "60ce4825",
+      "javaText": "1.1891337E20",
+      "nodeJsonText": "118913370016532400000"
+    },
+    {
+      "name": "seeded-random-31",
+      "bits": "b51df582",
+      "javaText": "-5.884432E-7",
+      "nodeJsonText": "-5.884431857339223e-7"
+    }
+  ],
+  "rawFloatTokens": [
+    {
+      "name": "java-float-0.1",
+      "token": "0.1",
+      "accepted": true
+    },
+    {
+      "name": "node-json-stringify-f32-as-double-0.1",
+      "token": "0.10000000149011612",
+      "accepted": true
+    },
+    {
+      "name": "node-hidden-extra-precision-rounds-to-canonical-binary64",
+      "token": "0.100000001490116120000000000001",
+      "accepted": false
+    },
+    {
+      "name": "java-minimum-subnormal",
+      "token": "1.4E-45",
+      "accepted": true
+    },
+    {
+      "name": "node-minimum-subnormal",
+      "token": "1.401298464324817e-45",
+      "accepted": true
+    },
+    {
+      "name": "noncanonical-minimum-subnormal",
+      "token": "1E-45",
+      "accepted": false
+    },
+    {
+      "name": "nonzero-underflow-to-f32-zero",
+      "token": "1E-50",
+      "accepted": false
+    },
+    {
+      "name": "noncanonical-hidden-binary64-rounding",
+      "token": "1.0000000000000001",
+      "accepted": false
+    },
+    {
+      "name": "near-maximum-arbitrary-rounding",
+      "token": "3.4028234E38",
+      "accepted": false
+    },
+    {
+      "name": "java-float-max",
+      "token": "3.4028235E38",
+      "accepted": true
+    },
+    {
+      "name": "node-float-max",
+      "token": "3.4028234663852886e38",
+      "accepted": true
+    },
+    {
+      "name": "rounds-to-f32-infinity",
+      "token": "3.4028236E38",
+      "accepted": false
+    },
+    {
+      "name": "negative-noncanonical-hidden-precision",
+      "token": "-0.10000000000000001",
+      "accepted": false
+    },
+    {
+      "name": "negative-underflow-to-f32-zero",
+      "token": "-1E-50",
+      "accepted": false
+    },
+    {
+      "name": "negative-overflow-to-infinity",
+      "token": "-3.4028236E38",
+      "accepted": false
+    },
+    {
+      "name": "java-negative-zero",
+      "token": "-0.0",
+      "accepted": true
+    },
+    {
+      "name": "ecmascript-json-negative-zero-as-positive-zero",
+      "token": "0",
+      "accepted": true
+    }
+  ],
+  "safeIntegerTokens": [
+    {
+      "token": "0",
+      "safe": true,
+      "nonNegative": true
+    },
+    {
+      "token": "-0.000e9999",
+      "safe": true,
+      "nonNegative": true
+    },
+    {
+      "token": "1.00",
+      "safe": true,
+      "nonNegative": true
+    },
+    {
+      "token": "1e2",
+      "safe": true,
+      "nonNegative": true
+    },
+    {
+      "token": "1.20e1",
+      "safe": true,
+      "nonNegative": true
+    },
+    {
+      "token": "-1e0",
+      "safe": true,
+      "nonNegative": false
+    },
+    {
+      "token": "1.0000000000000001",
+      "safe": false,
+      "nonNegative": false
+    },
+    {
+      "token": "1.01e1",
+      "safe": false,
+      "nonNegative": false
+    },
+    {
+      "token": "9007199254740991",
+      "safe": true,
+      "nonNegative": true
+    },
+    {
+      "token": "9007199254740992",
+      "safe": false,
+      "nonNegative": false
+    },
+    {
+      "token": "-9007199254740991",
+      "safe": true,
+      "nonNegative": false
+    },
+    {
+      "token": "-9007199254740992",
+      "safe": false,
+      "nonNegative": false
+    }
+  ],
+  "semanticCases": {
+    "healthBeyondTwenty": {
+      "health": "21.0",
+      "maxHealth": "21.0",
+      "accepted": true,
+      "note": "No clamp is applied; existing health <= maxHealth semantics remain authoritative."
+    }
+  }
+}

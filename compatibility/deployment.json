@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "deploymentId": "mc1211-fabric-r01",
+  "manifestRevision": "abil-02.1",
+  "mod": {
+    "id": "worldspeaker",
+    "version": "0.1.0-dev.1"
+  },
+  "target": {
+    "selection": "selected",
+    "minecraft": "1.21.1",
+    "loader": "fabric",
+    "serverOnly": true,
+    "java": {
+      "major": 21,
+      "vendor": "Eclipse Adoptium",
+      "runtimeVersion": "21.0.13+9-LTS",
+      "distribution": "Temurin HotSpot JDK",
+      "platform": "Linux x86-64"
+    }
+  },
+  "runtimeDependencies": {
+    "fabricLoader": "0.20.1",
+    "fabricApi": "0.116.17+1.21.1"
+  },
+  "installationTools": {
+    "fabricInstaller": "1.1.2"
+  },
+  "upstreamArtifacts": {
+    "minecraftServerSha1": "59353fb40c36d304f2035d51e7d6e6baa98dc05c",
+    "minecraftClientSha1": "30c73b1c5da787909b2f73340419fdf13b9def88",
+    "temurinJdkSha256": "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c",
+    "gradleDistributionSha256": "31c55713e40233a8303827ceb42ca48a47267a0ad4bab9177123121e71524c26",
+    "openclawNpmIntegrity": "sha512-fWOIOOyddIBqeuPz82DBCdY5kNl1yD51qebAHnxlTN7SmVoH5/WSIudR/N1zDhcIIksgJXe6ZgGy5ngSRxZOrQ=="
+  },
+  "buildDependencies": {
+    "gradle": "8.10.2",
+    "fabricLoom": "1.8.13",
+    "yarnMappings": "1.21.1+build.3",
+    "yarnClassifier": "v2",
+    "javaTestBom": "5.11.4"
+  },
+  "openclaw": {
+    "package": "openclaw",
+    "version": "2026.10.8",
+    "node": "24.22.1",
+    "nodeRange": ">=24.22.1 <25 || >=26.12.1",
+    "npm": "11.19.1",
+    "pluginApiStability": "experimental"
+  },
+  "companion": {
+    "package": "@worldspeaker/openclaw-channel",
+    "version": "0.1.0-dev.1",
+    "protocol": "worldspeaker.compat.v5",
+    "websocket": "8.22.0",
+    "typescript": "5.9.3",
+    "nodeTypes": "24.10.0",
+    "websocketTypes": "8.18.1"
+  },
+  "transport": {
+    "owner": "Worldspeaker OpenClaw native channel plugin",
+    "developmentBind": "127.0.0.1",
+    "developmentScheme": "ws",
+    "nonLoopbackScheme": "wss",
+    "maxFrameBytes": 16384,
+    "handshakeTimeoutMs": 5000,
+    "heartbeatIntervalMs": 5000,
+    "peerExpiryMs": 10000,
+    "maxWaitingOutboundFrames": 16,
+    "maxBoundConnections": 1,
+    "reconnectDelaysMs": [1000, 2000, 4000]
+  },
+  "optionalIntegrations": {
+    "permissionPlugin": null,
+    "externalClaimsAdapter": null,
+    "rconBridge": null,
+    "clientMod": null,
+    "resourcePack": null
+  },
+  "availableFeatures": [],
+  "unavailableAbilities": [
+    "worldspeaker.core.observe_player@1",
+    "worldspeaker.core.strike_lightning@1"
+  ],
+  "qualification": {
+    "state": "unqualified",
+    "evidence": []
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "binding": {
+    "serverId": "<SERVER_ID>",
+    "worldId": "<WORLD_ID>",
+    "characterId": "<CHARACTER_ID>",
+    "agentId": "<AGENT_ID>"
+  },
+  "server": {
+    "endpoint": "ws://127.0.0.1:18473",
+    "acknowledgementTemplate": "I hear you, {player}. I will answer when I can.",
+    "characterDisplayName": "God",
+    "characterAliases": [],
+    "characterChatStyle": "plain",
+    "conversationAllowedPlayers": [],
+    "attention": {
+      "subscriptions": []
+    }
+  },
+  "companion": {
+    "bindHost": "127.0.0.1",
+    "port": 18473,
+    "deploymentId": "<DEPLOYMENT_ID>",
+    "manifestSha256": "<DEPLOYMENT_MANIFEST_SHA256>"
+  },
+  "abilityPolicy": {
+    "schemaVersion": 1,
+    "revision": 0,
+    "grants": [],
+    "denials": [],
+    "protection": {
+      "externalClaimsMode": "REQUIRED"
+    }
+  },
+  "credentialFile": "/ABSOLUTE_PRIVATE_DIRECTORY/<CREDENTIAL_FILE>",
+  "personaFile": "/ABSOLUTE_PRIVATE_DIRECTORY/<PERSONA_FILE>"
+}

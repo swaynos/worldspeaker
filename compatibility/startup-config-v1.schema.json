@@ -1,0 +1,281 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://worldspeaker.invalid/schema/startup-config-v1.json",
+  "title": "Worldspeaker startup bundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "binding",
+    "server",
+    "companion",
+    "abilityPolicy",
+    "credentialFile"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "binding": { "$ref": "#/$defs/binding" },
+    "server": { "$ref": "#/$defs/server" },
+    "companion": { "$ref": "#/$defs/companion" },
+    "abilityPolicy": { "$ref": "#/$defs/abilityPolicy" },
+    "credentialFile": { "$ref": "#/$defs/localReference" },
+    "personaFile": { "$ref": "#/$defs/localReference" }
+  },
+  "$defs": {
+    "bindingId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    },
+    "localReference": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^/(?!/)(?!.*//)(?!.*\\/$)(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*://)[^\\u0000-\\u001f\\u007f-\\u009f]+$"
+    },
+    "uuid": {
+      "type": "string",
+      "minLength": 36,
+      "maxLength": 36,
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "dimension": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 256,
+      "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$"
+    },
+    "binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["serverId", "worldId", "characterId", "agentId"],
+      "properties": {
+        "serverId": { "$ref": "#/$defs/bindingId" },
+        "worldId": { "$ref": "#/$defs/bindingId" },
+        "characterId": { "$ref": "#/$defs/bindingId" },
+        "agentId": { "$ref": "#/$defs/bindingId" }
+      }
+    },
+    "server": {
+      "type": "object",
+      "additionalProperties": false,
+      "worldspeakerDistinctConfiguredNames": true,
+      "required": ["endpoint", "acknowledgementTemplate", "characterDisplayName", "conversationAllowedPlayers"],
+      "properties": {
+        "endpoint": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "pattern": "^(?:ws|wss)://[a-z0-9.\\[\\]:-]+(?:/[A-Za-z0-9._~/-]*)?$",
+          "worldspeakerEndpoint": true,
+          "description": "Strict Worldspeaker endpoint syntax; requires the worldspeakerEndpoint schema vocabulary adapter. See compatibility/endpoint-syntax-v1-corpus.json and docs/r01/fixes/R01-CHAR-03-BUG-002.md.",
+          "$comment": "Required semantic keyword: strict lowercase ws/wss, canonical ASCII host/IPv6/port/path, no raw userinfo/query/fragment delimiters, whitespace, backslash, Unicode, or WHATWG shorthand rewrites. A validator without this keyword MUST reject rather than ignore it."
+        },
+        "acknowledgementTemplate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[^\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f-\\u009f]*$",
+          "worldspeakerAcknowledgementTemplate": true,
+          "description": "Exact UTF-16-bounded acknowledgement text; requires the Worldspeaker acknowledgement-template vocabulary adapter.",
+          "$comment": "A validator without worldspeakerAcknowledgementTemplate MUST reject rather than ignore it. The adapter checks the exact template with global {player} substitution against the production visibility policy."
+        },
+        "characterDisplayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48,
+          "pattern": "^[^\\u0000-\\u001f\\u007f-\\u009f\\u00a7]+$",
+          "worldspeakerNaturalAddressName": true
+        },
+        "conversationAllowedPlayers": {
+          "type": "array",
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/uuid" }
+        },
+        "characterAliases": {
+          "type": "array",
+          "maxItems": 8,
+          "uniqueItems": true,
+          "worldspeakerMaxUtf16TotalLength": 384,
+          "items": { "type": "string", "worldspeakerConfiguredAlias": true }
+        },
+        "followupWindowSeconds": { "type": "integer", "minimum": 0, "maximum": 30 },
+        "executionBudgetSeconds": { "type": "integer", "minimum": 1, "maximum": 30 },
+        "characterChatStyle": { "enum": ["plain", "bracketed"] },
+        "attention": {
+          "type": "object",
+          "additionalProperties": false,
+          "worldspeakerPlayerRateAtMostGlobal": true,
+          "properties": {
+            "subscriptions": {
+              "type": "array",
+              "maxItems": 5,
+              "uniqueItems": true,
+              "items": { "enum": ["player_connection", "player_dimension", "player_death", "player_respawn", "player_movement"] }
+            },
+            "maxEvents": { "type": "integer", "minimum": 1, "maximum": 64 },
+            "maxAgeSeconds": { "type": "integer", "minimum": 1, "maximum": 60 },
+            "maxBytes": { "type": "integer", "minimum": 1024, "maximum": 8192 },
+            "maxEventsPerSecond": { "type": "integer", "minimum": 1, "maximum": 32 },
+            "maxEventsPerPlayerSecond": { "type": "integer", "minimum": 1, "maximum": 8 }
+          }
+        }
+      }
+    },
+    "companion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bindHost", "port", "deploymentId", "manifestSha256"],
+      "properties": {
+        "bindHost": { "const": "127.0.0.1" },
+        "port": { "type": "integer", "minimum": 1024, "maximum": 65535 },
+        "deploymentId": { "const": "mc1211-fabric-r01" },
+        "manifestSha256": { "const": "457fe9b912b93745283c95d176f89f8b4b5cf33c831dd186fa6cd596cb2b6ed7" }
+      }
+    },
+    "abilityPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "revision", "grants", "denials", "protection"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "revision": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+        "grants": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/grant" } },
+        "denials": { "type": "array", "maxItems": 32, "items": { "$ref": "#/$defs/denial" } },
+        "protection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": { "externalClaimsMode": { "enum": ["REQUIRED", "NONE"] } }
+        }
+      }
+    },
+    "grantBase": {
+      "type": "object",
+      "required": ["id", "characterId", "abilityId", "contractVersion", "requesterIds", "dimensions"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
+        "characterId": { "$ref": "#/$defs/bindingId" },
+        "abilityId": { "enum": ["worldspeaker.core.observe_player", "worldspeaker.core.strike_lightning"] },
+        "contractVersion": { "const": 1 },
+        "requesterIds": { "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/uuid" } },
+        "otherTargetIds": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/uuid" } },
+        "dimensions": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": { "$ref": "#/$defs/dimension" } },
+        "maxRangeBlocks": { "type": "number", "exclusiveMinimum": 0, "maximum": 64 },
+        "region": { "$ref": "#/$defs/abilityRegion" },
+        "limits": { "type": "object" }
+      }
+    },
+    "abilityRegion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minX", "maxXExclusive", "minZ", "maxZExclusive"],
+      "properties": {
+        "minX": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "maxXExclusive": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "minZ": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 },
+        "maxZExclusive": { "type": "integer", "minimum": -9007199254740991, "maximum": 9007199254740991 }
+      },
+      "worldspeakerMinLessThanMax": [["minX", "maxXExclusive"], ["minZ", "maxZExclusive"]],
+      "$comment": "Requires the Worldspeaker semantic validator for mathematical safe-integer coordinates and strict half-open bounds."
+    },
+    "observeLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requesterIntervalMs": { "type": "integer", "minimum": 2000, "maximum": 300000 },
+        "characterIntervalMs": { "type": "integer", "minimum": 250, "maximum": 300000 }
+      }
+    },
+    "lightningLimits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requesterCooldownMs": { "type": "integer", "minimum": 30000, "maximum": 300000 },
+        "targetCooldownMs": { "type": "integer", "minimum": 30000, "maximum": 300000 },
+        "characterIntervalMs": { "type": "integer", "minimum": 1000, "maximum": 300000 }
+      }
+    },
+    "grant": {
+      "type": "object",
+      "allOf": [
+        { "$ref": "#/$defs/grantBase" },
+        {
+          "oneOf": [
+            {
+              "properties": {
+                "abilityId": { "const": "worldspeaker.core.observe_player" },
+                "contractVersion": { "const": 1 },
+                "limits": { "$ref": "#/$defs/observeLimits" }
+              },
+              "required": ["abilityId", "contractVersion"]
+            },
+            {
+              "properties": {
+                "abilityId": { "const": "worldspeaker.core.strike_lightning" },
+                "contractVersion": { "const": 1 },
+                "limits": { "$ref": "#/$defs/lightningLimits" }
+              },
+              "required": ["abilityId", "contractVersion"]
+            }
+          ],
+          "$comment": "The closed limits object is selected by this exact abilityId and contractVersion pair; omitted limits or an empty limits object retain that ability's documented defaults."
+        },
+        {
+          "if": { "properties": { "abilityId": { "const": "worldspeaker.core.observe_player" } }, "required": ["abilityId"] },
+          "then": {
+            "not": {
+              "anyOf": [
+                { "properties": { "allowVisual": {} }, "required": ["allowVisual"] },
+                { "properties": { "allowDamage": {} }, "required": ["allowDamage"] },
+                { "properties": { "maxDamage": {} }, "required": ["maxDamage"] }
+              ]
+            }
+          }
+        },
+        {
+          "if": { "properties": { "abilityId": { "const": "worldspeaker.core.strike_lightning" } }, "required": ["abilityId"] },
+          "then": {
+            "required": ["allowVisual"],
+            "properties": { "allowVisual": { "const": true } },
+            "allOf": [
+              {
+                "if": { "properties": { "allowDamage": { "const": true } }, "required": ["allowDamage"] },
+                "then": { "properties": { "maxDamage": {} }, "required": ["maxDamage"] },
+                "else": { "not": { "properties": { "maxDamage": {} }, "required": ["maxDamage"] } }
+              }
+            ]
+          }
+        }
+      ],
+      "additionalProperties": false,
+      "required": ["id", "characterId", "abilityId", "contractVersion", "requesterIds", "dimensions"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
+        "characterId": { "$ref": "#/$defs/bindingId" },
+        "abilityId": { "enum": ["worldspeaker.core.observe_player", "worldspeaker.core.strike_lightning"] },
+        "contractVersion": { "const": 1 },
+        "requesterIds": { "type": "array", "minItems": 1, "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/uuid" } },
+        "otherTargetIds": { "type": "array", "maxItems": 32, "uniqueItems": true, "items": { "$ref": "#/$defs/uuid" } },
+        "dimensions": { "type": "array", "minItems": 1, "maxItems": 16, "uniqueItems": true, "items": { "$ref": "#/$defs/dimension" } },
+        "maxRangeBlocks": { "type": "number", "exclusiveMinimum": 0, "maximum": 64 },
+        "allowVisual": { "const": true },
+        "allowDamage": { "type": "boolean" },
+        "maxDamage": { "type": "number", "exclusiveMinimum": 0, "maximum": 5 },
+        "region": { "$ref": "#/$defs/abilityRegion" },
+        "limits": { "type": "object" }
+      }
+    },
+    "denial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "abilityId", "contractVersion"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]{1,128}$" },
+        "abilityId": { "enum": ["worldspeaker.core.observe_player", "worldspeaker.core.strike_lightning"] },
+        "contractVersion": { "const": 1 }
+      }
+    }
+  }
+}

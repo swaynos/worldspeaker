@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "revision": 0,
+  "grants": [
+    {
+      "id": "<GRANT_ID>",
+      "characterId": "<CHARACTER_ID>",
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "requesterIds": ["<REQUESTER_UUID>"],
+      "dimensions": ["minecraft:overworld"],
+      "maxRangeBlocks": 16,
+      "allowVisual": true,
+      "allowDamage": false
+    }
+  ],
+  "denials": [],
+  "protection": {
+    "externalClaimsMode": "REQUIRED"
+  }
+}

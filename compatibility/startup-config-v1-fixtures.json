@@ -1,0 +1,103 @@
+{
+  "description": "Generic fixtures only. Reference paths are fictional placeholders and are not credentials or runnable local configuration.",
+  "valid": [
+    {
+      "name": "minimal-deny-all",
+      "bundle": {
+        "schemaVersion": 1,
+        "binding": { "serverId": "fixture-server", "worldId": "fixture-world", "characterId": "fixture-character", "agentId": "fixture-agent" },
+        "server": {
+          "endpoint": "ws://127.0.0.1:18473",
+          "acknowledgementTemplate": "Hello {player}",
+          "characterDisplayName": "Archivist",
+          "conversationAllowedPlayers": []
+        },
+        "companion": {
+          "bindHost": "127.0.0.1",
+          "port": 18473,
+          "deploymentId": "mc1211-fabric-r01",
+          "manifestSha256": "457fe9b912b93745283c95d176f89f8b4b5cf33c831dd186fa6cd596cb2b6ed7"
+        },
+        "abilityPolicy": { "schemaVersion": 1, "revision": 0, "grants": [], "denials": [], "protection": {} },
+        "credentialFile": "/private/example/worldspeaker-credential.txt"
+      }
+    },
+    {
+      "name": "complete-observe-grant",
+      "bundle": {
+        "schemaVersion": 1,
+        "binding": { "serverId": "fixture-server", "worldId": "fixture-world", "characterId": "fixture-character", "agentId": "fixture-agent" },
+        "server": {
+          "endpoint": "wss://companion.example.invalid:18473",
+          "acknowledgementTemplate": "Hello {player}",
+          "characterDisplayName": "Archivist",
+          "conversationAllowedPlayers": [],
+          "attention": { "subscriptions": ["player_connection"], "maxEventsPerSecond": 8, "maxEventsPerPlayerSecond": 4 }
+        },
+        "companion": {
+          "bindHost": "127.0.0.1",
+          "port": 18473,
+          "deploymentId": "mc1211-fabric-r01",
+          "manifestSha256": "457fe9b912b93745283c95d176f89f8b4b5cf33c831dd186fa6cd596cb2b6ed7"
+        },
+        "abilityPolicy": {
+          "schemaVersion": 1,
+          "revision": 5,
+          "grants": [{
+            "id": "observe-primary",
+            "characterId": "fixture-character",
+            "abilityId": "worldspeaker.core.observe_player",
+            "contractVersion": 1,
+            "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+            "dimensions": ["minecraft:overworld"],
+            "maxRangeBlocks": 48
+          }],
+          "denials": [],
+          "protection": { "externalClaimsMode": "REQUIRED" }
+        },
+        "credentialFile": "/private/example/worldspeaker-credential.txt",
+        "personaFile": "/private/example/inactive-persona.txt"
+      }
+    },
+    {
+      "name": "complete-visual-lightning-grant",
+      "bundle": {
+        "schemaVersion": 1,
+        "binding": { "serverId": "fixture-server", "worldId": "fixture-world", "characterId": "fixture-character", "agentId": "fixture-agent" },
+        "server": {
+          "endpoint": "ws://[::1]:18473",
+          "acknowledgementTemplate": "Hello {player}",
+          "characterDisplayName": "Archivist",
+          "conversationAllowedPlayers": []
+        },
+        "companion": {
+          "bindHost": "127.0.0.1",
+          "port": 18473,
+          "deploymentId": "mc1211-fabric-r01",
+          "manifestSha256": "457fe9b912b93745283c95d176f89f8b4b5cf33c831dd186fa6cd596cb2b6ed7"
+        },
+        "abilityPolicy": {
+          "schemaVersion": 1,
+          "revision": 0,
+          "grants": [{
+            "id": "lightning-visual",
+            "characterId": "fixture-character",
+            "abilityId": "worldspeaker.core.strike_lightning",
+            "contractVersion": 1,
+            "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+            "dimensions": ["minecraft:overworld"],
+            "allowVisual": true
+          }],
+          "denials": [],
+          "protection": { "externalClaimsMode": "NONE" }
+        },
+        "credentialFile": "/private/example/worldspeaker-credential.txt"
+      }
+    }
+  ],
+  "invalid": [
+    { "name": "unsupported-bundle-version", "bundle": { "schemaVersion": 2 } },
+    { "name": "unknown-root-authority", "bundle": { "schemaVersion": 1, "operator": true } },
+    { "name": "null-required-binding", "bundle": { "schemaVersion": 1, "binding": null } }
+  ]
+}

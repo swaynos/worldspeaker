@@ -1,0 +1,151 @@
+{
+  "$schema": "https://worldspeaker.invalid/schema/dialogue-v3-meta-schema.json",
+  "$id": "https://worldspeaker.invalid/schema/dialogue-v3.json",
+  "title": "Worldspeaker attributed dialogue protocol v3",
+  "oneOf": [
+    { "$ref": "#/$defs/request" },
+    { "$ref": "#/$defs/ackFrame" },
+    { "$ref": "#/$defs/cancel" },
+    { "$ref": "#/$defs/message" },
+    { "$ref": "#/$defs/failure" }
+  ],
+  "$defs": {
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "bindingString": {
+      "type": "string", "minLength": 1, "maxLength": 512,
+      "worldspeakerMaxUtf16Length": 512, "worldspeakerNonBlankTrim": true
+    },
+    "audience": {
+      "type": "object", "additionalProperties": false,
+      "required": ["kind", "playerId"],
+      "properties": { "kind": { "const": "player" }, "playerId": { "$ref": "#/$defs/uuid" } }
+    },
+    "monotonic": {
+      "type": "string", "pattern": "^(?:0|-?[1-9][0-9]*)$", "maxLength": 20,
+      "worldspeakerInt64Range": true
+    },
+    "wallTime": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "event": {
+      "type": "object", "additionalProperties": false,
+      "required": ["serverId", "worldId", "characterId", "agentId", "eventId", "serverEpochId", "occurredAtUnixMillis", "capturedAtMonotonicNanos", "eventOrigin", "inputKind", "playerId", "playerName", "dimension", "text"],
+      "properties": {
+        "serverId": { "$ref": "#/$defs/bindingString" }, "worldId": { "$ref": "#/$defs/bindingString" },
+        "characterId": { "$ref": "#/$defs/bindingString" }, "agentId": { "$ref": "#/$defs/bindingString" },
+        "eventId": { "$ref": "#/$defs/uuid" }, "serverEpochId": { "$ref": "#/$defs/uuid" },
+        "occurredAtUnixMillis": { "$ref": "#/$defs/wallTime" },
+        "capturedAtMonotonicNanos": { "$ref": "#/$defs/monotonic" },
+        "eventOrigin": { "enum": ["live", "history"] },
+        "inputKind": { "enum": ["command", "natural_address", "followup"] },
+        "playerId": { "$ref": "#/$defs/uuid" },
+        "playerName": { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[^\\u0000-\\u001f\\u007f]+$", "worldspeakerMaxUtf16Length": 32, "worldspeakerNonBlankTrim": true },
+        "dimension": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 512, "pattern": "[^\\s]", "not": { "pattern": "[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]" }, "worldspeakerMaxUtf16Length": 512, "worldspeakerNonBlankTrim": true }
+      }
+    },
+    "attentionDetails": {
+      "oneOf": [
+        { "type": "object", "additionalProperties": false, "required": [], "properties": {} },
+        { "type": "object", "additionalProperties": false, "required": ["originDimension"], "properties": { "originDimension": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$" } } },
+        { "type": "object", "additionalProperties": false, "required": ["copiedAlive"], "properties": { "copiedAlive": { "type": "boolean" } } },
+        { "type": "object", "additionalProperties": false, "required": ["basis"], "properties": { "basis": { "const": "sampled_block_change" } } }
+      ]
+    },
+    "attentionEvent": {
+      "type": "object", "additionalProperties": false,
+      "required": ["serverId", "worldId", "characterId", "agentId", "eventId", "serverEpochId", "occurredAtUnixMillis", "capturedAtMonotonicNanos", "eventOrigin", "source", "subject", "dimension", "eventKind", "details"],
+      "properties": {
+        "serverId": { "$ref": "#/$defs/bindingString" }, "worldId": { "$ref": "#/$defs/bindingString" },
+        "characterId": { "$ref": "#/$defs/bindingString" }, "agentId": { "$ref": "#/$defs/bindingString" },
+        "eventId": { "$ref": "#/$defs/uuid" }, "serverEpochId": { "$ref": "#/$defs/uuid" },
+        "occurredAtUnixMillis": { "$ref": "#/$defs/wallTime" },
+        "capturedAtMonotonicNanos": { "$ref": "#/$defs/monotonic" },
+        "eventOrigin": { "enum": ["live", "history"] },
+        "source": { "enum": ["server_callback", "server_sample"] },
+        "subject": {
+          "type": "object", "additionalProperties": false, "required": ["playerId", "playerName"],
+          "properties": { "playerId": { "$ref": "#/$defs/uuid" }, "playerName": { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[^\\u0000-\\u001f\\u007f]+$", "worldspeakerMaxUtf16Length": 32, "worldspeakerNonBlankTrim": true } }
+        },
+        "dimension": { "type": "string", "minLength": 3, "maxLength": 256, "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$" },
+        "eventKind": { "enum": ["joined", "left", "died", "respawned", "dimension_changed", "moved"] },
+        "details": { "$ref": "#/$defs/attentionDetails" }
+      },
+      "allOf": [
+        { "if": { "properties": { "eventKind": { "enum": ["joined", "left", "died"] } }, "required": ["eventKind"] }, "then": { "properties": { "source": { "const": "server_callback" }, "details": { "type": "object", "maxProperties": 0 } } } },
+        { "if": { "properties": { "eventKind": { "const": "dimension_changed" } }, "required": ["eventKind"] }, "then": { "properties": { "source": { "const": "server_callback" }, "details": { "type": "object", "properties": { "originDimension": true }, "required": ["originDimension"], "maxProperties": 1 } } } },
+        { "if": { "properties": { "eventKind": { "const": "respawned" } }, "required": ["eventKind"] }, "then": { "properties": { "source": { "const": "server_callback" }, "details": { "type": "object", "properties": { "copiedAlive": true }, "required": ["copiedAlive"], "maxProperties": 1 } } } },
+        { "if": { "properties": { "eventKind": { "const": "moved" } }, "required": ["eventKind"] }, "then": { "properties": { "source": { "const": "server_sample" }, "details": { "type": "object", "properties": { "basis": true }, "required": ["basis"], "maxProperties": 1 } } } }
+      ]
+    },
+    "contextEvent": { "oneOf": [{ "$ref": "#/$defs/event" }, { "$ref": "#/$defs/attentionEvent" }] },
+    "contextStatus": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "lossRevision", "reasons"],
+      "properties": {
+        "state": { "enum": ["disabled", "bounded", "incomplete"] },
+        "lossRevision": { "type": "string", "pattern": "^(?:0|[1-9][0-9]*)$", "maxLength": 19, "worldspeakerNonnegativeInt64Range": true },
+        "reasons": { "type": "array", "uniqueItems": true, "maxItems": 8, "items": { "enum": ["epoch_start", "expiry", "capacity", "rate", "bytes", "frame", "transport", "source_unavailable"] } }
+      },
+      "allOf": [
+        { "if": { "properties": { "state": { "const": "disabled" } }, "required": ["state"] }, "then": { "properties": { "lossRevision": { "const": "0" }, "reasons": { "type": "array", "maxItems": 0 } } } },
+        { "if": { "properties": { "state": { "const": "bounded" } }, "required": ["state"] }, "then": { "properties": { "reasons": { "type": "array", "maxItems": 0 } } } },
+        { "if": { "properties": { "state": { "const": "incomplete" } }, "required": ["state"] }, "then": { "properties": { "reasons": { "type": "array", "minItems": 1 } } } }
+      ]
+    },
+    "conversation": {
+      "type": "object", "additionalProperties": false, "required": ["conversationId", "replyToMessageId"],
+      "properties": { "conversationId": { "$ref": "#/$defs/uuid" }, "replyToMessageId": { "oneOf": [{ "$ref": "#/$defs/uuid" }, { "type": "null" }] } }
+    },
+    "acknowledgement": {
+      "type": "object", "additionalProperties": false,
+      "required": ["messageId", "text", "dispatchedAtUnixMillis", "dispatchedAtMonotonicNanos", "replyAudience"],
+      "properties": {
+        "messageId": { "$ref": "#/$defs/uuid" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "[^\\s]", "not": { "pattern": "[\\u0000-\\u001f\\u007f]" }, "worldspeakerMaxUtf16Length": 2048, "worldspeakerNonBlankTrim": true },
+        "dispatchedAtUnixMillis": { "$ref": "#/$defs/wallTime" },
+        "dispatchedAtMonotonicNanos": { "$ref": "#/$defs/monotonic" },
+        "replyAudience": { "$ref": "#/$defs/audience" }
+      }
+    },
+    "request": {
+      "type": "object", "additionalProperties": false,
+      "required": ["type", "protocol", "requestId", "invocationId", "serverId", "worldId", "characterId", "agentId", "event", "conversation", "replyAudience", "contextBatch", "contextStatus", "acknowledgement"],
+      "properties": {
+        "type": { "const": "dialogue.request" }, "protocol": { "const": "worldspeaker.compat.v3" },
+        "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" },
+        "serverId": { "$ref": "#/$defs/bindingString" }, "worldId": { "$ref": "#/$defs/bindingString" },
+        "characterId": { "$ref": "#/$defs/bindingString" }, "agentId": { "$ref": "#/$defs/bindingString" },
+        "event": {
+          "allOf": [
+            { "$ref": "#/$defs/event" },
+            { "type": "object", "required": ["eventOrigin"], "properties": { "eventOrigin": { "const": "live" } } }
+          ]
+        }, "conversation": { "$ref": "#/$defs/conversation" },
+        "replyAudience": { "$ref": "#/$defs/audience" },
+        "contextBatch": { "type": "array", "maxItems": 8, "worldspeakerMaxUtf8Bytes": 8192, "items": { "$ref": "#/$defs/contextEvent" } },
+        "contextStatus": { "$ref": "#/$defs/contextStatus" },
+        "acknowledgement": { "oneOf": [{ "$ref": "#/$defs/acknowledgement" }, { "type": "null" }] }
+      },
+      "allOf": [{
+        "if": { "properties": { "event": { "type": "object", "properties": { "inputKind": { "const": "followup" } }, "required": ["inputKind"] } }, "required": ["event"] },
+        "then": { "properties": { "conversation": { "type": "object", "properties": { "replyToMessageId": { "$ref": "#/$defs/uuid" } } } } },
+        "else": { "properties": { "conversation": { "type": "object", "properties": { "replyToMessageId": { "type": "null" } } } } }
+      }]
+    },
+    "ackFrame": {
+      "type": "object", "additionalProperties": false, "required": ["type", "protocol", "requestId", "invocationId", "playerId", "acknowledgement"],
+      "properties": { "type": { "const": "dialogue.ack" }, "protocol": { "const": "worldspeaker.compat.v3" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "playerId": { "$ref": "#/$defs/uuid" }, "acknowledgement": { "$ref": "#/$defs/acknowledgement" } }
+    },
+    "cancel": {
+      "type": "object", "additionalProperties": false, "required": ["type", "protocol", "requestId", "invocationId", "playerId"],
+      "properties": { "type": { "const": "dialogue.cancel" }, "protocol": { "const": "worldspeaker.compat.v3" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "playerId": { "$ref": "#/$defs/uuid" } }
+    },
+    "message": {
+      "type": "object", "additionalProperties": false, "required": ["type", "protocol", "messageId", "requestId", "invocationId", "characterId", "replyAudience", "kind", "text"],
+      "properties": { "type": { "const": "dialogue.message" }, "protocol": { "const": "worldspeaker.compat.v3" }, "messageId": { "$ref": "#/$defs/uuid" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "characterId": { "$ref": "#/$defs/bindingString" }, "replyAudience": { "$ref": "#/$defs/audience" }, "kind": { "const": "answer" }, "text": { "type": "string", "minLength": 1, "maxLength": 2048, "pattern": "[^\\s]", "not": { "pattern": "[\\u0000-\\u0008\\u000b\\u000c\\u000e-\\u001f\\u007f]" }, "worldspeakerMaxUtf16Length": 2048, "worldspeakerNonBlankTrim": true } }
+    },
+    "failure": {
+      "type": "object", "additionalProperties": false, "required": ["type", "protocol", "requestId", "invocationId", "characterId", "replyAudience", "reason"],
+      "properties": { "type": { "const": "dialogue.failure" }, "protocol": { "const": "worldspeaker.compat.v3" }, "requestId": { "$ref": "#/$defs/uuid" }, "invocationId": { "$ref": "#/$defs/uuid" }, "characterId": { "$ref": "#/$defs/bindingString" }, "replyAudience": { "$ref": "#/$defs/audience" }, "reason": { "const": "unavailable" } }
+    }
+  }
+}

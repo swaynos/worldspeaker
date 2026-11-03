@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "provenance": "offline_scenario_catalog_not_test_results",
+  "workClassPolicy": {
+    "classes": ["ordinary", "tool-heavy", "unknown", "mixed"],
+    "assignment": "Assign only from the selected catalog scenario on each human terminal classification, before interpreting latency or answer content. Missing assignments are unknown; conflicting ordinary and tool-heavy assignments are mixed. Never infer a class from response speed, wording, or requested ability.",
+    "toolHeavySupport": "BLOCKED_UNTIL_A_PUBLICLY_SUPPORTED_TOOL_WORKLOAD_EXISTS",
+    "toolHeavyScenarioMayRun": false
+  },
+  "scenarios": [
+    {
+      "id": "unaided-discovery",
+      "workClass": "unknown",
+      "situation": "Players encounter the character without prior instruction.",
+      "observe": ["whether each player discovers an available way to address the character", "time to discovery", "help or surprises"],
+      "constraints": ["allow two minutes before public help", "do not coach away a failed discovery"]
+    },
+    {
+      "id": "personal-advice",
+      "workClass": "ordinary",
+      "situation": "A player asks for advice that can be interpreted using the approved public persona and premise brief.",
+      "observe": ["whether the reply addresses the situation", "persona and premise fit", "whether uncertainty is explained"],
+      "constraints": ["no required wording or stance", "do not require invented lore"]
+    },
+    {
+      "id": "context-follow-up",
+      "workClass": "ordinary",
+      "situation": "A player refers to a detail from an earlier exchange in the same conversation.",
+      "observe": ["whether the reply uses the available context coherently", "whether missing or stale context is handled honestly"],
+      "constraints": ["use only the supported limited follow-up grammar", "do not treat a receipt as a relevant answer"]
+    },
+    {
+      "id": "shared-fictional-fact",
+      "workClass": "ordinary",
+      "situation": "Player A and Player B discuss a shared fictional fact in one game session.",
+      "observe": ["whether the same shared game route is used", "whether attribution and context remain coherent for both players"],
+      "constraints": ["both players participate freely", "do not require a scripted fact or reply"]
+    },
+    {
+      "id": "incomplete-old-attention",
+      "workClass": "ordinary",
+      "situation": "Relevant captured attention is incomplete or old when a player asks about it.",
+      "observe": ["whether age and loss limits are represented honestly", "whether the character avoids claiming continuous awareness"],
+      "constraints": ["do not infer facts that were not captured"]
+    },
+    {
+      "id": "absent-world-ability",
+      "workClass": "ordinary",
+      "situation": "A player asks for an effect or ability the server does not provide.",
+      "observe": ["whether the limitation is clearly explained", "whether the reply avoids claiming an unverified effect"],
+      "constraints": ["do not grant or simulate a game ability"]
+    },
+    {
+      "id": "changed-situation",
+      "workClass": "ordinary",
+      "situation": "The situation changes after an earlier request, or an earlier fact is no longer current.",
+      "observe": ["whether the reply distinguishes known facts from stale context", "whether it avoids presenting old context as current"],
+      "constraints": ["record unknown intervals as unknown"]
+    },
+    {
+      "id": "burst-and-distinct-question",
+      "workClass": "ordinary",
+      "situation": "One player makes seven repeat attempts in six seconds while another player asks a distinct question.",
+      "observe": ["per-invocation dispositions and retained-request linkage", "whether the distinct player's request remains separately attributable", "bounded progress and terminal outcomes"],
+      "constraints": ["do not add load or retry automatically", "retain rejected and coalesced attempts in totals"]
+    },
+    {
+      "id": "bounded-delay-or-failure",
+      "workClass": "ordinary",
+      "situation": "A request experiences bounded delay or a safe technical failure.",
+      "observe": ["first-dispatch latency", "truthful queued or awaiting-answer progress", "terminal or unresolved outcome"],
+      "constraints": ["progress is not a completed answer", "do not claim model or tool activity"]
+    },
+    {
+      "id": "free-conversation",
+      "workClass": "ordinary",
+      "situation": "Each player chooses at least one exchange without a prescribed question or expected answer.",
+      "observe": ["relevance, coherence, enjoyment and unexpected problems", "whether the character stays within its approved premise"],
+      "constraints": ["no golden answer", "no LLM judge or automatic quality pass"]
+    },
+    {
+      "id": "supported-tool-heavy-work",
+      "workClass": "tool-heavy",
+      "status": "blocked",
+      "situation": "A future publicly supported game capability requires explicit tool work under separately approved bounds.",
+      "observe": ["whether the approved capability is available", "whether progress and terminal outcomes remain bounded and truthful"],
+      "constraints": ["do not run while tool support is unavailable or unapproved", "do not infer work class from response speed, wording, or an unavailable ability"]
+    }
+  ]
+}

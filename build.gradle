@@ -1,0 +1,590 @@
+import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+import java.security.MessageDigest
+import org.gradle.jvm.toolchain.JvmVendorSpec
+
+def deploymentFile = file('compatibility/deployment.json')
+def deployment = new JsonSlurper().parse(deploymentFile)
+def deploymentHash = MessageDigest.getInstance('SHA-256').digest(deploymentFile.bytes).encodeHex().toString()
+
+buildscript {
+    repositories {
+        maven { url = 'https://maven.fabricmc.net/' }
+        mavenCentral()
+    }
+    configurations.classpath.resolutionStrategy.activateDependencyLocking()
+    dependencies {
+        def selected = new JsonSlurper().parse(new File(rootDir, 'compatibility/deployment.json'))
+        classpath "net.fabricmc:fabric-loom:${selected.buildDependencies.fabricLoom}"
+    }
+}
+
+apply plugin: 'fabric-loom'
+apply plugin: 'java'
+
+group = 'org.worldspeaker'
+version = deployment.mod.version
+base {
+    archivesName = deployment.mod.id
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(deployment.target.java.major as int)
+        vendor = JvmVendorSpec.ADOPTIUM
+    }
+    withSourcesJar()
+}
+
+repositories {
+    maven { url = 'https://maven.fabricmc.net/' }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${deployment.target.minecraft}"
+    mappings "net.fabricmc:yarn:${deployment.buildDependencies.yarnMappings}:${deployment.buildDependencies.yarnClassifier}"
+    modImplementation "net.fabricmc:fabric-loader:${deployment.runtimeDependencies.fabricLoader}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${deployment.runtimeDependencies.fabricApi}"
+
+    testImplementation platform("org.junit:junit-bom:${deployment.buildDependencies.javaTestBom}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+dependencyLocking {
+    lockAllConfigurations()
+}
+
+def generatedContractResources = layout.buildDirectory.dir('generated/compatibility-resources')
+def generatedContractSources = layout.buildDirectory.dir('generated/compatibility-sources')
+def generatedLoadHarnessResources = layout.buildDirectory.dir('generated/loadTest/resources')
+def publicBodyUnicodeSources = fileTree('tools/unicode/data/15.0.0')
+
+tasks.register('verifyPublicBodyUnicodeData', Exec) {
+    group = 'verification'
+    description = 'Verifies the pinned Unicode 15.0.0 source hashes and all generated Java/TypeScript/schema property tables.'
+    inputs.file('tools/unicode/manifest-15.0.0.json')
+    inputs.file('tools/unicode/generate-public-body-unicode.mjs')
+    inputs.files(publicBodyUnicodeSources)
+    inputs.files('compatibility/unicode/public-body-unicode-15.0.0.json',
+            'companion/src/generated/public-body-unicode.ts',
+            'src/main/java/org/worldspeaker/generated/PublicBodyUnicode.java')
+    commandLine 'node', 'tools/unicode/generate-public-body-unicode.mjs', '--check'
+}
+
+tasks.register('verifyAbilityContracts', Exec) {
+    group = 'verification'
+    description = 'Validates the selected ability catalogue and generated TypeScript/package metadata freshness.'
+    inputs.files('compatibility/ability-contracts-v1.json', 'compatibility/ability-contracts-v1.schema.json',
+            'compatibility/ability-discovery-v1.schema.json', 'compatibility/ability-predicates-v1.schema.json',
+            'compatibility/ability-contracts-v1-schema-resource.json', 'tools/abilities/generate-ability-contracts.mjs')
+    inputs.files('companion/src/generated/ability-catalogue.ts', fileTree('companion/compatibility'))
+    commandLine 'node', 'tools/abilities/generate-ability-contracts.mjs', '--check'
+}
+
+tasks.register('generateDeploymentMetadata') {
+    inputs.file(deploymentFile)
+    inputs.files('compatibility/ability-contracts-v1.json', 'compatibility/ability-contracts-v1.schema.json',
+            'compatibility/ability-discovery-v1.schema.json', 'compatibility/ability-predicates-v1.schema.json',
+            'compatibility/ability-contracts-v1-schema-resource.json')
+    outputs.dir(generatedContractResources)
+    outputs.dir(generatedContractSources)
+    doLast {
+        def manifest = new JsonSlurper().parse(deploymentFile)
+        def hash = MessageDigest.getInstance('SHA-256').digest(deploymentFile.bytes).encodeHex().toString()
+        def resources = generatedContractResources.get().asFile
+        def sources = generatedContractSources.get().asFile
+        resources.mkdirs()
+        sources.mkdirs()
+        new File(resources, 'worldspeaker-deployment.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(manifest)) + '\n'
+        new File(resources, 'worldspeaker-deployment.sha256').text = hash + '\n'
+        new File(resources, 'worldspeaker-ability-contracts-v1.json').bytes = file('compatibility/ability-contracts-v1.json').bytes
+        new File(resources, 'worldspeaker-ability-contracts-v1.schema.json').bytes = file('compatibility/ability-contracts-v1.schema.json').bytes
+        new File(resources, 'worldspeaker-ability-discovery-v1.schema.json').bytes = file('compatibility/ability-discovery-v1.schema.json').bytes
+        new File(resources, 'worldspeaker-ability-predicates-v1.schema.json').bytes = file('compatibility/ability-predicates-v1.schema.json').bytes
+        new File(resources, 'worldspeaker-ability-contracts-v1-schema-resource.json').bytes = file('compatibility/ability-contracts-v1-schema-resource.json').bytes
+        def facts = [
+            deploymentId: manifest.deploymentId,
+            manifestRevision: manifest.manifestRevision,
+            manifestSha256: hash,
+            minecraftVersion: manifest.target.minecraft,
+            fabricLoaderVersion: manifest.runtimeDependencies.fabricLoader,
+            fabricApiVersion: manifest.runtimeDependencies.fabricApi,
+            javaVendor: manifest.target.java.vendor,
+            javaRuntimeVersion: manifest.target.java.runtimeVersion,
+            javaMajor: manifest.target.java.major.toString(),
+            openclawVersion: manifest.openclaw.version,
+            nodeVersion: manifest.openclaw.node,
+            companionVersion: manifest.companion.version,
+            protocol: manifest.companion.protocol
+        ]
+        new File(resources, 'worldspeaker-deployment.properties').withWriter('UTF-8') { writer ->
+            facts.each { key, value -> writer.write("${key}=${value}\n") }
+        }
+        def javaFile = new File(sources, 'org/worldspeaker/generated/DeploymentFacts.java')
+        javaFile.parentFile.mkdirs()
+        def constants = facts.collect { key, value ->
+            def name = key.replaceAll(/([a-z])([A-Z])/, '$1_$2').toUpperCase(Locale.ROOT)
+            def escaped = value.toString().replace('\\', '\\\\').replace('"', '\\"')
+            "    public static final String ${name} = \"${escaped}\";"
+        }.join('\n')
+        javaFile.text = """package org.worldspeaker.generated;
+
+/** Generated from compatibility/deployment.json; do not edit. */
+public final class DeploymentFacts {
+    private DeploymentFacts() {}
+${constants}
+}
+"""
+    }
+}
+
+sourceSets.main.java.srcDir(generatedContractSources)
+sourceSets.main.resources.srcDir(generatedContractResources)
+
+sourceSets {
+    loadTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += output + sourceSets.main.output + sourceSets.main.runtimeClasspath
+        resources.srcDir(generatedLoadHarnessResources)
+    }
+}
+
+tasks.register('generateLoadHarnessMetadata') {
+    def harnessSources = fileTree('src/loadTest')
+    inputs.files(harnessSources)
+    inputs.file(deploymentFile)
+    outputs.file(generatedLoadHarnessResources.map { it.file('worldspeaker-load-harness.json') })
+    doLast {
+        def digest = MessageDigest.getInstance('SHA-256')
+        harnessSources.files.sort { left, right ->
+            relativePath(left).replace('\\', '/').compareTo(relativePath(right).replace('\\', '/'))
+        }.each { source ->
+            digest.update(relativePath(source).replace('\\', '/').getBytes('UTF-8'))
+            digest.update((byte) 0)
+            digest.update(source.bytes)
+            digest.update((byte) 0)
+        }
+        def metadata = [
+            schemaVersion: 1,
+            modId: 'worldspeaker_compat_load_harness',
+            deploymentId: deployment.deploymentId,
+            deploymentManifestSha256: deploymentHash,
+            harnessSourcesSha256: digest.digest().encodeHex().toString(),
+            entrypoint: 'org.worldspeaker.load.WorldspeakerTickLoadHarness',
+        ]
+        def output = generatedLoadHarnessResources.get().file('worldspeaker-load-harness.json').asFile
+        output.parentFile.mkdirs()
+        output.text = JsonOutput.prettyPrint(JsonOutput.toJson(metadata)) + '\n'
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn tasks.named('generateDeploymentMetadata'), tasks.named('verifyPublicBodyUnicodeData'), tasks.named('verifyAbilityContracts')
+}
+
+tasks.named('sourcesJar') {
+    dependsOn tasks.named('generateDeploymentMetadata')
+}
+
+tasks.named('compileLoadTestJava') {
+    dependsOn tasks.named('compileJava')
+}
+
+tasks.named('processLoadTestResources') {
+    dependsOn tasks.named('generateLoadHarnessMetadata')
+}
+
+tasks.register('compatLoadHarnessJar', Jar) {
+    group = 'verification'
+    description = 'Builds the separately installable, server-only COMPAT-03 load harness; it is not part of production artifacts.'
+    dependsOn tasks.named(sourceSets.loadTest.classesTaskName)
+    from sourceSets.loadTest.output
+    archiveBaseName = deployment.mod.id
+    archiveVersion = deployment.mod.version
+    archiveClassifier = 'compat-load-harness'
+    destinationDirectory = layout.buildDirectory.dir('load-harness')
+}
+
+processResources {
+    dependsOn tasks.named('generateDeploymentMetadata')
+    inputs.property 'version', project.version
+    inputs.property 'minecraftVersion', deployment.target.minecraft
+    inputs.property 'fabricLoaderVersion', deployment.runtimeDependencies.fabricLoader
+    inputs.property 'fabricApiVersion', deployment.runtimeDependencies.fabricApi
+    filesMatching('fabric.mod.json') {
+        expand(
+            version: project.version,
+            minecraftVersion: deployment.target.minecraft,
+            fabricLoaderVersion: deployment.runtimeDependencies.fabricLoader,
+            fabricApiVersion: deployment.runtimeDependencies.fabricApi
+        )
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 21
+    options.encoding = 'UTF-8'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+def candidateJava = deployment.target.java
+def candidatePlatform = candidateJava.platform
+def normalizeArchitecture = { String architecture ->
+    switch (architecture?.toLowerCase(Locale.ROOT)) {
+        case ['x86_64', 'amd64', 'x64']:
+            return 'x86_64'
+        case ['aarch64', 'arm64']:
+            return 'aarch64'
+        default:
+            return architecture?.toLowerCase(Locale.ROOT) ?: 'unknown'
+    }
+}
+def unquoteReleaseValue = { String value ->
+    if (value == null) return null
+    value = value.trim()
+    if (value.length() >= 2 && ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))) {
+        return value.substring(1, value.length() - 1)
+    }
+    return value
+}
+def readPropertiesFile = { File propertiesFile ->
+    def values = new Properties()
+    if (propertiesFile.isFile()) {
+        propertiesFile.withInputStream { stream -> values.load(stream) }
+    }
+    values
+}
+def readOsRelease = {
+    def values = [:]
+    def releaseFile = file('/etc/os-release')
+    if (releaseFile.isFile()) {
+        releaseFile.eachLine('UTF-8') { line ->
+            def match = line =~ /^([A-Z_]+)=(.*)$/
+            if (match.matches()) values[match[0][1]] = unquoteReleaseValue(match[0][2])
+        }
+    }
+    values
+}
+def candidateBuildFacts = {
+    def compilerMetadata = tasks.named('compileJava', JavaCompile).get().javaCompiler.get().metadata
+    def compilerRelease = readPropertiesFile(new File(compilerMetadata.installationPath.asFile, 'release'))
+    def osRelease = readOsRelease.call()
+    [
+        gradleJavaVendor: System.getProperty('java.vendor'),
+        gradleJavaRuntimeVersion: Runtime.version().toString(),
+        gradleJavaMajor: Runtime.version().feature().toString(),
+        compilerJavaVendor: unquoteReleaseValue(compilerRelease.getProperty('IMPLEMENTOR')),
+        compilerJavaRuntimeVersion: compilerMetadata.javaRuntimeVersion.toString(),
+        compilerJavaMajor: compilerMetadata.languageVersion.asInt().toString(),
+        compilerArchitecture: normalizeArchitecture(unquoteReleaseValue(compilerRelease.getProperty('OS_ARCH'))),
+        osName: System.getProperty('os.name'),
+        osArchitecture: normalizeArchitecture(System.getProperty('os.arch')),
+        distributionId: osRelease.ID ?: 'unknown',
+        distributionVersion: osRelease.VERSION_ID ?: 'unknown',
+        kernel: System.getProperty('os.version')
+    ]
+}
+def verifyCandidateBuildEnvironment = {
+    def facts = candidateBuildFacts.call()
+    def expectedVersion = candidateJava.runtimeVersion.toString()
+    def expectedVendor = candidateJava.vendor.toString()
+    def expectedMajor = candidateJava.major.toString()
+    def refusals = []
+
+    if (candidatePlatform != 'Linux x86-64') {
+        refusals << "WS-CANDIDATE-PLATFORM-CONTRACT: manifest platform '${candidatePlatform}' does not match the finite candidate platform Linux x86-64."
+    }
+    if (facts.gradleJavaVendor != expectedVendor) {
+        refusals << "WS-CANDIDATE-JAVA-VENDOR-MISMATCH: Gradle JVM vendor is '${facts.gradleJavaVendor}'; expected '${expectedVendor}'."
+    }
+    if (facts.gradleJavaRuntimeVersion != expectedVersion) {
+        refusals << "WS-CANDIDATE-JAVA-RUNTIME-MISMATCH: Gradle JVM is ${facts.gradleJavaRuntimeVersion}; expected ${expectedVersion} (${expectedVendor})."
+    }
+    if (facts.gradleJavaMajor != expectedMajor) {
+        refusals << "WS-CANDIDATE-JAVA-MAJOR-MISMATCH: Gradle JVM major is ${facts.gradleJavaMajor}; expected ${expectedMajor}."
+    }
+    if (facts.compilerJavaVendor != expectedVendor) {
+        refusals << "WS-CANDIDATE-TOOLCHAIN-VENDOR-MISMATCH: Java compiler vendor is '${facts.compilerJavaVendor}'; expected '${expectedVendor}'."
+    }
+    if (facts.compilerJavaRuntimeVersion != expectedVersion) {
+        refusals << "WS-CANDIDATE-TOOLCHAIN-RUNTIME-MISMATCH: Java compiler is ${facts.compilerJavaRuntimeVersion}; expected ${expectedVersion} (${expectedVendor})."
+    }
+    if (facts.compilerJavaMajor != expectedMajor) {
+        refusals << "WS-CANDIDATE-TOOLCHAIN-MAJOR-MISMATCH: Java compiler major is ${facts.compilerJavaMajor}; expected ${expectedMajor}."
+    }
+    if (!facts.osName.equalsIgnoreCase('Linux') || facts.osArchitecture != 'x86_64' || facts.compilerArchitecture != 'x86_64' ||
+        facts.distributionId != 'ubuntu' || facts.distributionVersion != '24.04') {
+        refusals << "WS-CANDIDATE-PLATFORM-MISMATCH: expected Ubuntu 24.04 Linux x86-64; observed ${facts.distributionId} ${facts.distributionVersion}, ${facts.osName}/${facts.osArchitecture}, compiler/${facts.compilerArchitecture}."
+    }
+    if (!refusals.isEmpty()) {
+        throw new GradleException(refusals.join('\n'))
+    }
+    logger.lifecycle("WS-CANDIDATE-BUILD-ENVIRONMENT: ${expectedVendor} ${expectedVersion}; Ubuntu 24.04 Linux x86-64; kernel ${facts.kernel}.")
+}
+
+tasks.register('verifyCandidateBuildEnvironment') {
+    group = 'verification'
+    description = 'Requires the exact recorded build/runtime JDK and finite candidate platform before candidate or qualified artifact assembly.'
+    doLast {
+        verifyCandidateBuildEnvironment.call()
+    }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(tasks.named('assembleCandidate').get())) {
+        // Refuse before build/package dependencies can emit candidate outputs.
+        // localDevelopment is deliberately not consulted for artifact assembly.
+        verifyCandidateBuildEnvironment.call()
+    }
+    def releaseAssemblyRequested = graph.hasTask(tasks.named('assembleRelease').get()) ||
+        graph.hasTask(tasks.named('verifyReleaseCompatibility').get())
+    def localCompilationOrTestRequested = graph.allTasks.any { task -> task.name in ['compileJava', 'compileTestJava', 'test'] }
+    if (localCompilationOrTestRequested && !releaseAssemblyRequested) {
+        try {
+            verifyCandidateBuildEnvironment.call()
+        } catch (GradleException mismatch) {
+            if (project.findProperty('localDevelopment')?.toString() != 'true') {
+                throw new GradleException('WS-LOCAL-DEV-LABEL-REQUIRED: this compile/test run is outside the pinned candidate environment; rerun local development work with -PlocalDevelopment=true. This label does not authorize candidate or release assembly.', mismatch)
+            }
+            logger.lifecycle("WS-LOCAL-DEV-ONLY: ${Runtime.version()} ${System.getProperty('os.name')}/${System.getProperty('os.arch')}; compile/test tasks only, not a pinned candidate build.")
+        }
+    }
+}
+
+tasks.register('validateDeploymentContract', Exec) {
+    group = 'verification'
+    description = 'Validates the strict deployment and qualification JSON Schemas.'
+    commandLine 'node', 'tools/compat/validate-contract.mjs', '--deployment', deploymentFile.absolutePath
+}
+
+tasks.register('generateCompatibilityDocs', Exec) {
+    group = 'documentation'
+    description = 'Generates administrator requirements from the deployment manifest.'
+    inputs.file(deploymentFile)
+    inputs.file('tools/compat/generate-compatibility-docs.mjs')
+    outputs.file('docs/compatibility.md')
+    commandLine 'node', 'tools/compat/generate-compatibility-docs.mjs'
+}
+
+def godPresetArchive = layout.buildDirectory.file('presets/worldspeaker-god-preset-v1.zip')
+def companionGodPresetArchive = file('companion/presets/worldspeaker-god-preset-v1.zip')
+def godPresetInputs = files(
+        fileTree('presets/god'),
+        file('compatibility/deployment.json'),
+        file('compatibility/startup-config-v1.schema.json'),
+        file('LICENSE'),
+        file('tools/presets/god-preset-archive.mjs'),
+        file('tools/presets/build-god-preset.mjs'),
+        file('tools/presets/verify-god-preset.mjs'))
+
+tasks.register('packageGodPreset', Exec) {
+    group = 'distribution'
+    description = 'Builds the fixed, reproducible public God preset data ZIP and companion package sidecar.'
+    inputs.files(godPresetInputs)
+    outputs.files(godPresetArchive, companionGodPresetArchive)
+    commandLine 'node', 'tools/presets/build-god-preset.mjs', '--write'
+}
+
+tasks.register('verifyGodPreset', Exec) {
+    group = 'verification'
+    description = 'Checks the actual bounded ZIP, current source/schema/license freshness, and byte-identical companion sidecar.'
+    dependsOn tasks.named('packageGodPreset')
+    inputs.files(godPresetInputs, godPresetArchive, companionGodPresetArchive)
+    commandLine 'node', 'tools/presets/verify-god-preset.mjs'
+}
+
+tasks.register('packageCompanion', Exec) {
+    group = 'distribution'
+    description = 'Builds and packs the exact-version OpenClaw channel companion.'
+    dependsOn tasks.named('packageGodPreset')
+    workingDir file('companion')
+    inputs.files(fileTree('companion/src'), file('companion/package.json'), file('companion/package-lock.json'), file('companion/tsconfig.json'),
+            file('companion/openclaw.plugin.json'), file('companion/README.md'), file('companion/LICENSE'),
+            companionGodPresetArchive, file('tools/presets/build-god-preset.mjs'), file('tools/presets/god-preset-archive.mjs'))
+    outputs.file(file('companion/worldspeaker-openclaw-channel-0.1.0-dev.1.tgz'))
+    commandLine 'npm', 'run', 'pack:candidate'
+}
+
+def verifyCandidateCompanionArchiveFreshness = { File archive ->
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+    def result = exec {
+        commandLine 'node', file('tools/compat/verify-companion-package-archive.mjs').absolutePath, archive.absolutePath
+        standardOutput = stdout
+        errorOutput = stderr
+        ignoreExitValue = true
+    }
+    if (result.exitValue != 0) {
+        def diagnostic = (stderr.toString('UTF-8') + stdout.toString('UTF-8')).trim()
+        throw new GradleException(diagnostic ?: 'WS-CANDIDATE-COMPANION-ARCHIVE-INVALID: archive freshness verifier failed.')
+    }
+    logger.lifecycle(stdout.toString('UTF-8').trim())
+}
+
+def verifyServerOnlyArchive = { File archive ->
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+    def result = exec {
+        commandLine 'node', file('tools/compat/verify-server-only.mjs').absolutePath, '--jar', archive.absolutePath
+        standardOutput = stdout
+        errorOutput = stderr
+        ignoreExitValue = true
+    }
+    if (result.exitValue != 0) {
+        def diagnostic = (stderr.toString('UTF-8') + stdout.toString('UTF-8')).trim()
+        throw new GradleException(diagnostic ?: 'WS-SERVER-ONLY-REJECTED: packaged bytecode verification failed.')
+    }
+    logger.lifecycle(stdout.toString('UTF-8').trim())
+}
+
+def verifyGodPresetArchiveFreshness = {
+    def stdout = new ByteArrayOutputStream()
+    def stderr = new ByteArrayOutputStream()
+    def result = exec {
+        commandLine 'node', file('tools/presets/verify-god-preset.mjs').absolutePath
+        standardOutput = stdout
+        errorOutput = stderr
+        ignoreExitValue = true
+    }
+    if (result.exitValue != 0) {
+        def diagnostic = (stderr.toString('UTF-8') + stdout.toString('UTF-8')).trim()
+        throw new GradleException(diagnostic ?: 'WS-GOD-PRESET-INVALID: preset verifier failed.')
+    }
+    logger.lifecycle(stdout.toString('UTF-8').trim())
+}
+
+tasks.register('verifyServerOnly', Exec) {
+    group = 'verification'
+    description = 'Inspects the actual remapped JAR metadata, ZIP entries, and bounded class references for the reviewed server-only surface.'
+    dependsOn tasks.named('remapJar')
+    inputs.file('tools/compat/verify-server-only.mjs')
+    inputs.file(deploymentFile)
+    inputs.file(tasks.named('remapJar').get().archiveFile)
+    doFirst {
+        commandLine 'node', file('tools/compat/verify-server-only.mjs').absolutePath,
+                '--jar', tasks.named('remapJar').get().archiveFile.get().asFile.absolutePath
+    }
+}
+
+tasks.register('validateApprovedQualification', Exec) {
+    group = 'verification'
+    description = 'Strictly validates an approved qualification record when one exists.'
+    def approval = file('docs/qualification/COMPAT-01/approved.json')
+    onlyIf { approval.exists() }
+    commandLine 'node', 'tools/compat/validate-contract.mjs', '--qualification', approval.absolutePath
+}
+
+def packageCompatibilityDocuments = { File output ->
+    verifyGodPresetArchiveFreshness.call()
+    exec {
+        commandLine 'node', file('tools/compat/package-status-docs.mjs').absolutePath, output.absolutePath
+    }
+}
+
+tasks.register('assembleCandidate') {
+    group = 'distribution'
+    description = 'Builds an explicitly unqualified candidate distribution.'
+    dependsOn tasks.named('build'), tasks.named('validateDeploymentContract'), tasks.named('generateCompatibilityDocs'), tasks.named('packageCompanion'), tasks.named('verifyServerOnly')
+    doLast {
+        verifyCandidateBuildEnvironment.call()
+        def companionArchive = file('companion/worldspeaker-openclaw-channel-0.1.0-dev.1.tgz')
+        if (!companionArchive.exists()) throw new GradleException('WS-CANDIDATE-COMPANION-MISSING: exact companion package was not produced.')
+        // This action-boundary check must remain here: -x packageCompanion can
+        // leave an old archive in place, and graph dependencies can be excluded.
+        // Run it before deleting or mutating any candidate output.
+        verifyCandidateCompanionArchiveFreshness.call(companionArchive)
+        verifyGodPresetArchiveFreshness.call()
+        def jar = tasks.named('remapJar').get().archiveFile.get().asFile
+        // This copy-boundary invocation remains mandatory if -x skips verifyServerOnly.
+        verifyServerOnlyArchive.call(jar)
+        def output = layout.buildDirectory.dir('distributions/worldspeaker-candidate').get().asFile
+        delete output
+        output.mkdirs()
+        copy { from jar; into output }
+        copy { from 'compatibility/deployment.schema.json'; into output }
+        packageCompatibilityDocuments.call(output)
+        def packagedCompatibility = new File(output, 'compatibility.md')
+        copy { from companionArchive; into output }
+        def requirements = new File(output, 'REQUIREMENTS.md')
+        requirements.text = packagedCompatibility.text + '\n\nCandidate assembly does not itself confer qualification or support.\n'
+        def artifacts = output.listFiles().findAll { it.isFile() && it.name != 'outer-manifest.json' }.sort { it.name }
+        def outer = [
+            schemaVersion: 1,
+            deploymentId: deployment.deploymentId,
+            manifestRevision: deployment.manifestRevision,
+            deploymentManifestSha256: deploymentHash,
+            qualificationState: deployment.qualification.state,
+            artifacts: artifacts.collect { item -> [name: item.name, bytes: item.length(), sha256: MessageDigest.getInstance('SHA-256').digest(item.bytes).encodeHex().toString()] }
+        ]
+        new File(output, 'outer-manifest.json').text = JsonOutput.prettyPrint(JsonOutput.toJson(outer)) + '\n'
+    }
+}
+
+def verifyApprovedReleaseEvidence = {
+    def approval = file('docs/qualification/COMPAT-01/approved.json')
+    if (!approval.exists()) {
+        throw new GradleException('WS-RELEASE-UNQUALIFIED: no approved COMPAT-01 evidence exists; candidate artifacts cannot be assembled as a supported release.')
+    }
+    def mod = tasks.named('remapJar').get().archiveFile.get().asFile
+    def companionArchive = file('companion/worldspeaker-openclaw-channel-0.1.0-dev.1.tgz')
+    verifyGodPresetArchiveFreshness.call()
+    exec {
+        commandLine 'node', file('tools/compat/verify-release-evidence.mjs').absolutePath,
+            '--record', approval.absolutePath,
+            '--manifest', deploymentFile.absolutePath,
+            '--mod', mod.absolutePath,
+            '--companion', companionArchive.absolutePath,
+            '--preset', godPresetArchive.get().asFile.absolutePath
+    }
+}
+
+tasks.register('verifyReleaseCompatibility') {
+    group = 'verification'
+    description = 'Fails closed unless an approved, exact-artifact qualification is present.'
+    dependsOn tasks.named('remapJar'), tasks.named('packageCompanion'), tasks.named('validateDeploymentContract'), tasks.named('validateApprovedQualification'), tasks.named('verifyServerOnly')
+    doLast {
+        verifyApprovedReleaseEvidence.call()
+        verifyCandidateBuildEnvironment.call()
+    }
+}
+
+tasks.register('assembleRelease') {
+    group = 'distribution'
+    // Keep contract validation direct: excluding the verifier must not remove the
+    // validators for the manifest and any present approval record.
+    dependsOn tasks.named('verifyReleaseCompatibility'), tasks.named('validateDeploymentContract'), tasks.named('validateApprovedQualification')
+    // Deliberately declare no outputs. Gradle must run the authorization check on
+    // every invocation, including when a stale release directory already exists.
+    outputs.upToDateWhen { false }
+    doLast {
+        // Task exclusion (-x verifyReleaseCompatibility) skips the verifier task
+        // and its action, so enforce the same approval check at the release boundary.
+        verifyApprovedReleaseEvidence.call()
+        verifyCandidateBuildEnvironment.call()
+        def jar = tasks.named('remapJar').get().archiveFile.get().asFile
+        // This copy-boundary invocation remains mandatory if -x skips verifyServerOnly.
+        verifyServerOnlyArchive.call(jar)
+        def output = layout.buildDirectory.dir('distributions/worldspeaker-release').get().asFile
+        output.mkdirs()
+        copy { from jar; into output }
+        copy { from file('companion/worldspeaker-openclaw-channel-0.1.0-dev.1.tgz'); into output }
+        packageCompatibilityDocuments.call(output)
+        copy { from godPresetArchive; into output }
+        copy { from 'docs/qualification/COMPAT-01/approved.json'; into output }
+    }
+}
+
+tasks.register('preflightCompatibility', Exec) {
+    group = 'verification'
+    description = 'Checks local Java, Node, npm, and optionally packaged metadata without starting a server.'
+    commandLine 'node', 'tools/compat/preflight.mjs'
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('validateDeploymentContract'), tasks.named('verifyServerOnly'), tasks.named('verifyPublicBodyUnicodeData'), tasks.named('verifyGodPreset'), tasks.named('verifyAbilityContracts')
+}

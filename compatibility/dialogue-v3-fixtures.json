@@ -1,0 +1,138 @@
+{
+  "request": {
+    "type": "dialogue.request",
+    "protocol": "worldspeaker.compat.v3",
+    "requestId": "00000000-0000-4000-8000-000000000001",
+    "invocationId": "00000000-0000-4000-8000-000000000002",
+    "serverId": "fixture-server",
+    "worldId": "fixture-world",
+    "characterId": "fixture-character",
+    "agentId": "fixture-agent",
+    "event": {
+      "serverId": "fixture-server",
+      "worldId": "fixture-world",
+      "characterId": "fixture-character",
+      "agentId": "fixture-agent",
+      "eventId": "00000000-0000-4000-8000-000000000003",
+      "serverEpochId": "00000000-0000-4000-8000-000000000004",
+      "occurredAtUnixMillis": 1793275200000,
+      "capturedAtMonotonicNanos": "-9223372036854775808",
+      "eventOrigin": "live",
+      "inputKind": "command",
+      "playerId": "00000000-0000-4000-8000-000000000005",
+      "playerName": "PlayerA",
+      "dimension": "minecraft:overworld",
+      "text": "Where was the earlier marker?"
+    },
+    "conversation": {
+      "conversationId": "00000000-0000-4000-8000-000000000006",
+      "replyToMessageId": null
+    },
+    "replyAudience": {
+      "kind": "player",
+      "playerId": "00000000-0000-4000-8000-000000000005"
+    },
+    "contextBatch": [
+      {
+        "serverId": "fixture-server",
+        "worldId": "fixture-world",
+        "characterId": "fixture-character",
+        "agentId": "fixture-agent",
+        "eventId": "00000000-0000-4000-8000-000000000007",
+        "serverEpochId": "00000000-0000-4000-8000-000000000004",
+        "occurredAtUnixMillis": 1793275199000,
+        "capturedAtMonotonicNanos": "1234567890123456789",
+        "eventOrigin": "history",
+        "inputKind": "natural_address",
+        "playerId": "00000000-0000-4000-8000-000000000008",
+        "playerName": "PlayerB",
+        "dimension": "minecraft:overworld",
+        "text": "I left a marker by the river."
+      },
+      {
+        "serverId": "fixture-server",
+        "worldId": "fixture-world",
+        "characterId": "fixture-character",
+        "agentId": "fixture-agent",
+        "eventId": "00000000-0000-4000-8000-00000000000c",
+        "serverEpochId": "00000000-0000-4000-8000-000000000004",
+        "occurredAtUnixMillis": 1793275199500,
+        "capturedAtMonotonicNanos": "1234567890123456790",
+        "eventOrigin": "live",
+        "source": "server_callback",
+        "subject": {
+          "playerId": "00000000-0000-4000-8000-000000000005",
+          "playerName": "PlayerA"
+        },
+        "dimension": "minecraft:overworld",
+        "eventKind": "joined",
+        "details": {}
+      }
+    ],
+    "contextStatus": {
+      "state": "incomplete",
+      "lossRevision": "1",
+      "reasons": ["epoch_start"]
+    },
+    "acknowledgement": {
+      "messageId": "00000000-0000-4000-8000-000000000009",
+      "text": "I have your request.",
+      "dispatchedAtUnixMillis": 1793275200001,
+      "dispatchedAtMonotonicNanos": "-9223372036854775807",
+      "replyAudience": {
+        "kind": "player",
+        "playerId": "00000000-0000-4000-8000-000000000005"
+      }
+    }
+  },
+  "ack": {
+    "type": "dialogue.ack",
+    "protocol": "worldspeaker.compat.v3",
+    "requestId": "00000000-0000-4000-8000-000000000001",
+    "invocationId": "00000000-0000-4000-8000-000000000002",
+    "playerId": "00000000-0000-4000-8000-000000000005",
+    "acknowledgement": {
+      "messageId": "00000000-0000-4000-8000-00000000000a",
+      "text": "The request is queued.",
+      "dispatchedAtUnixMillis": 1793275200002,
+      "dispatchedAtMonotonicNanos": "1234567890123456789",
+      "replyAudience": {
+        "kind": "player",
+        "playerId": "00000000-0000-4000-8000-000000000005"
+      }
+    }
+  },
+  "cancel": {
+    "type": "dialogue.cancel",
+    "protocol": "worldspeaker.compat.v3",
+    "requestId": "00000000-0000-4000-8000-000000000001",
+    "invocationId": "00000000-0000-4000-8000-000000000002",
+    "playerId": "00000000-0000-4000-8000-000000000005"
+  },
+  "message": {
+    "type": "dialogue.message",
+    "protocol": "worldspeaker.compat.v3",
+    "messageId": "00000000-0000-4000-8000-00000000000b",
+    "requestId": "00000000-0000-4000-8000-000000000001",
+    "invocationId": "00000000-0000-4000-8000-000000000002",
+    "characterId": "fixture-character",
+    "replyAudience": {
+      "kind": "player",
+      "playerId": "00000000-0000-4000-8000-000000000005"
+    },
+    "kind": "answer",
+    "text": "It was beside the river."
+  },
+  "failure": {
+    "type": "dialogue.failure",
+    "protocol": "worldspeaker.compat.v3",
+    "requestId": "00000000-0000-4000-8000-000000000001",
+    "invocationId": "00000000-0000-4000-8000-000000000002",
+    "characterId": "fixture-character",
+    "replyAudience": {
+      "kind": "player",
+      "playerId": "00000000-0000-4000-8000-000000000005"
+    },
+    "reason": "unavailable"
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://worldspeaker.invalid/schema/tickmetrics-operational-stream-v5.json",
+  "title": "TickMetrics bounded operational numeric stream v5 (reads legacy v3/v4)",
+  "oneOf": [
+    { "$ref": "#/$defs/manifest" },
+    { "$ref": "#/$defs/chunk" }
+  ],
+  "$defs": {
+    "uuid": { "type": "string", "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$" },
+    "counter": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "counterArrayLegacy": { "type": "array", "minItems": 46, "maxItems": 46, "items": { "$ref": "#/$defs/counter" } },
+    "counterArray": { "type": "array", "minItems": 47, "maxItems": 47, "items": { "$ref": "#/$defs/counter" } },
+    "histogram": { "type": "array", "minItems": 10, "maxItems": 10, "items": { "$ref": "#/$defs/counter" } },
+    "dispatchHistograms": {
+      "type": "array", "minItems": 14, "maxItems": 14,
+      "items": {
+        "type": "array", "minItems": 12, "maxItems": 12,
+        "items": { "$ref": "#/$defs/histogram" }
+      }
+    },
+    "nonnegativeLongString": { "type": "string", "minLength": 1, "maxLength": 19, "pattern": "^(?:0|[1-9][0-9]*)$" },
+    "int64String": { "type": "string", "minLength": 1, "maxLength": 20, "pattern": "^(?:0|-?[1-9][0-9]*)$" },
+    "nullableInt64String": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/int64String" }] },
+    "nullableNonnegativeLongString": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/nonnegativeLongString" }] },
+    "nullableUuid": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/uuid" }] },
+    "nullableSafeId": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$" }] },
+    "nullableWorldId": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:/-]+$" }] },
+    "nullableLabel": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9._:-]+$" }] },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id", "t0Nanos", "receiptWallTimeUnixMillis", "handlerEnteredAtNanos", "handlerDelayNanos",
+        "admittedAtNanos", "admissionDelayNanos", "queuedAtNanos", "queueDelayNanos", "fallbackCutoffAtNanos",
+        "deadlineAtNanos", "decisionAtNanos", "decisionRecorded", "executionBudgetSeconds", "pendingDeadlineAtNanos", "activeDeadlineAtNanos",
+        "absoluteExecutionDeadlineAtNanos", "progressIntervalNanos", "progressNoticeLimit", "captureProvenance",
+        "producer", "connectionGeneration", "player", "actualWorld", "serverBinding", "worldBinding",
+        "characterBinding", "origin", "outcome", "rateLimitStatus", "noticeStatus", "templateRevision",
+        "requestId", "requestLinkAtNanos", "queueDepthAtAdmission",
+        "firstDispatchNanos", "firstDispatchAtNanos", "queueAgeAtFirstDispatchNanos", "publicationId",
+        "firstDispatchSource", "firstDispatchDisposition", "firstReplyResult", "sendResult", "deadlineSettledAtNanos",
+        "failedDispatches", "unknownDispatches", "progress", "terminalOutcome", "terminalDeliveryResult",
+        "terminalAtNanos", "terminalNanos"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/uuid" },
+        "t0Nanos": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/int64String" }] },
+        "receiptWallTimeUnixMillis": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/counter" }] },
+        "handlerEnteredAtNanos": { "$ref": "#/$defs/int64String" },
+        "handlerDelayNanos": { "$ref": "#/$defs/nullableNonnegativeLongString" },
+        "admittedAtNanos": { "$ref": "#/$defs/int64String" },
+        "admissionDelayNanos": { "$ref": "#/$defs/nullableNonnegativeLongString" },
+        "queuedAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "queueDelayNanos": { "$ref": "#/$defs/nullableNonnegativeLongString" },
+        "fallbackCutoffAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "deadlineAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "decisionAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "decisionRecorded": { "type": "boolean" },
+        "executionBudgetSeconds": { "oneOf": [{ "type": "null" }, { "type": "integer", "minimum": 1, "maximum": 30 }] },
+        "pendingDeadlineAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "activeDeadlineAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "absoluteExecutionDeadlineAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "progressIntervalNanos": { "const": "10000000000" },
+        "progressNoticeLimit": { "const": 3 },
+        "captureProvenance": { "enum": ["LIVE_PACKET", "SYNTHETIC_HARNESS", "MISSING_PACKET_RECEIPT"] },
+        "producer": { "enum": ["SIGNED_CHAT", "UNSIGNED_COMMAND", "SIGNED_COMMAND", "SYNTHETIC_HARNESS", "MISSING_PACKET_RECEIPT", "LIVE_PACKET"] },
+        "connectionGeneration": { "$ref": "#/$defs/counter" },
+        "player": { "$ref": "#/$defs/nullableUuid" },
+        "actualWorld": { "$ref": "#/$defs/nullableWorldId" },
+        "serverBinding": { "$ref": "#/$defs/nullableLabel" },
+        "worldBinding": { "$ref": "#/$defs/nullableLabel" },
+        "characterBinding": { "$ref": "#/$defs/nullableLabel" },
+        "origin": { "enum": ["COMMAND", "NATURAL_ADDRESS", "FOLLOWUP"] },
+        "outcome": { "enum": ["HELP", "INVALID", "DENIED", "UNAUTHENTICATED", "UNAVAILABLE_BEFORE_BOOTSTRAP", "RECEIPT_EVIDENCE_MISSING", "UNAVAILABLE", "BUSY", "COALESCED", "FOLLOWUP_ENDED", "RATE_LIMITED", "EXPIRED", "ADMITTED"] },
+        "rateLimitStatus": { "enum": ["NOT_CHECKED", "ALLOWED", "INVOCATION_LIMITED", "SUBJECT_CAPACITY", "NEW_WORK_LIMITED", "EVIDENCE_UNAVAILABLE", "REPEAT_GUARD", "REPEAT_GUARD_CAPACITY"] },
+        "noticeStatus": { "enum": ["NOT_REQUIRED", "QUEUED", "SUPPRESSED", "SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "OVERFLOW", "CANCELLED"] },
+        "templateRevision": { "$ref": "#/$defs/nullableSafeId" },
+        "requestId": { "$ref": "#/$defs/nullableSafeId" },
+        "requestLinkAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "queueDepthAtAdmission": { "type": "integer", "minimum": 0, "maximum": 17 },
+        "playerQueueDepthAtAdmission": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "forwardedAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "pendingResidenceNanos": { "$ref": "#/$defs/nullableNonnegativeLongString" },
+        "globalPendingAtForward": { "oneOf": [{ "type": "null" }, { "type": "integer", "minimum": 0, "maximum": 16 }] },
+        "playerPendingAtForward": { "oneOf": [{ "type": "null" }, { "type": "integer", "minimum": 0, "maximum": 2 }] },
+        "firstDispatchNanos": { "oneOf": [{ "const": "-1" }, { "$ref": "#/$defs/nonnegativeLongString" }] },
+        "firstDispatchAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "queueAgeAtFirstDispatchNanos": { "$ref": "#/$defs/nullableNonnegativeLongString" },
+        "publicationId": { "$ref": "#/$defs/nullableSafeId" },
+        "noticeBatchPublicationId": { "$ref": "#/$defs/nullableUuid" },
+        "noticeBatchResult": { "enum": ["NOT_BATCHED", "PENDING", "CLAIMED", "SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "CANCELLED"] },
+        "noticeBatchAttemptedAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "noticeBatchLatencyNanos": { "$ref": "#/$defs/nullableNonnegativeLongString" },
+        "firstDispatchSource": { "oneOf": [{ "type": "null" }, { "enum": ["LOCAL_ACKNOWLEDGEMENT", "INTEGRATION_ANSWER", "INTEGRATION_FAILURE", "LOCAL_SAFE_RESPONSE", "LOCAL_REJECTION", "LOCAL_UNAVAILABLE", "LOCAL_COALESCED", "COMMAND_HELP", "LOCAL_FOLLOWUP_END", "COMMAND_GUIDANCE", "NATURAL_INVALID", "LOCAL_UNAUTHENTICATED", "LOCAL_DENIED", "LOCAL_BUSY"] }] },
+        "firstDispatchDisposition": { "oneOf": [{ "type": "null" }, { "enum": ["ACKNOWLEDGED", "ANSWERED", "FAILED", "REJECTED", "UNAVAILABLE", "COALESCED", "HELP", "FOLLOWUP_ENDED", "INVALID", "DENIED", "UNAUTHENTICATED", "BUSY"] }] },
+        "firstReplyResult": { "enum": ["PENDING", "ON_TIME", "LATE", "NO_DISPATCH_DEADLINE", "NO_DISPATCH_SETTLED", "EVIDENCE_MISSING"] },
+        "sendResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "NO_DISPATCH"] }] },
+        "deadlineSettledAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "failedDispatches": { "$ref": "#/$defs/counter" },
+        "unknownDispatches": { "$ref": "#/$defs/counter" },
+        "progress": { "type": "array", "maxItems": 3, "items": { "$ref": "#/$defs/progress" } },
+        "terminalOutcome": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[A-Z_]+$" }] },
+        "terminalDeliveryResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "NO_ATTEMPT"] }] },
+        "terminalAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "terminalNanos": { "oneOf": [{ "const": "-1" }, { "$ref": "#/$defs/nonnegativeLongString" }] },
+        "terminalCause": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1, "maxLength": 32, "pattern": "^[A-Z_]+$" }] },
+        "retirementNoticeResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "NO_AUDIENCE", "SUPPRESSED", "SHUTDOWN"] }] },
+        "localCancelStatus": { "enum": ["NOT_ATTEMPTED", "QUEUED", "DEFINITELY_UNSENT", "SUBMITTED", "UNKNOWN", "SHUTDOWN"] },
+        "localCancelSendResult": { "oneOf": [{ "type": "null" }, { "enum": ["SUBMITTED", "UNKNOWN"] }] },
+        "providerCancel": { "enum": [null, false] },
+        "lateOutputRejections": { "$ref": "#/$defs/counter" }
+      }
+    },
+    "invocationV3": {
+      "allOf": [
+        { "$ref": "#/$defs/invocation" },
+        {
+          "not": {
+            "anyOf": [
+              { "required": ["playerQueueDepthAtAdmission"] },
+              { "required": ["forwardedAtNanos"] },
+              { "required": ["pendingResidenceNanos"] },
+              { "required": ["globalPendingAtForward"] },
+              { "required": ["playerPendingAtForward"] },
+              { "required": ["terminalCause"] },
+              { "required": ["retirementNoticeResult"] },
+              { "required": ["localCancelStatus"] },
+              { "required": ["localCancelSendResult"] },
+              { "required": ["providerCancel"] },
+              { "required": ["lateOutputRejections"] }
+            ]
+          }
+        }
+      ]
+    },
+    "invocationV4": {
+      "allOf": [
+        { "$ref": "#/$defs/invocation" },
+        {
+          "required": [
+            "playerQueueDepthAtAdmission", "forwardedAtNanos", "pendingResidenceNanos",
+            "globalPendingAtForward", "playerPendingAtForward"
+          ]
+        },
+        {
+          "not": {
+            "anyOf": [
+              { "required": ["terminalCause"] },
+              { "required": ["retirementNoticeResult"] },
+              { "required": ["localCancelStatus"] },
+              { "required": ["localCancelSendResult"] },
+              { "required": ["providerCancel"] },
+              { "required": ["lateOutputRejections"] }
+            ]
+          }
+        }
+      ]
+    },
+    "invocationV5": {
+      "allOf": [
+        { "$ref": "#/$defs/invocation" },
+        {
+          "required": [
+            "playerQueueDepthAtAdmission", "forwardedAtNanos", "pendingResidenceNanos",
+            "globalPendingAtForward", "playerPendingAtForward", "terminalCause",
+            "retirementNoticeResult", "localCancelStatus", "localCancelSendResult",
+            "providerCancel", "lateOutputRejections"
+          ]
+        }
+      ]
+    },
+    "progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["phase", "state", "status", "noticeId", "publicSendResult", "publicDispatchAtNanos", "contextSendResult", "contextCompletedAtNanos", "latencyNanos"],
+      "properties": {
+        "phase": { "enum": ["queued", "awaiting_answer"] },
+        "state": { "enum": ["queued", "forwarded_waiting", "context_blocked"] },
+        "status": { "enum": ["dispatched", "failed", "missed", "unknown"] },
+        "noticeId": { "$ref": "#/$defs/nullableSafeId" },
+        "publicSendResult": { "enum": ["SUBMITTED", "DEFINITELY_UNSENT", "UNKNOWN", "NO_ATTEMPT"] },
+        "publicDispatchAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "contextSendResult": { "oneOf": [{ "type": "null" }, { "enum": ["SEND_COMPLETED", "FAILED", "UNKNOWN", "QUEUED_WITH_REQUEST"] }] },
+        "contextCompletedAtNanos": { "$ref": "#/$defs/nullableInt64String" },
+        "latencyNanos": { "$ref": "#/$defs/nonnegativeLongString" }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type", "numericFormatVersion", "snapshotId", "sourceInvocationCount", "retainedInvocationCount",
+        "omittedInvocationCount", "captureDroppedInvocationCount", "captureStatus", "chunkSize", "chunkCount",
+        "counters", "tickHistogram", "firstPublicDispatchHistograms", "maxFirstPublicDispatchNanos"
+      ],
+      "properties": {
+        "type": { "const": "numeric_snapshot_manifest" },
+        "numericFormatVersion": { "enum": [3, 4, 5] },
+        "snapshotId": { "$ref": "#/$defs/uuid" },
+        "sourceInvocationCount": { "$ref": "#/$defs/counter" },
+        "retainedInvocationCount": { "type": "integer", "minimum": 0, "maximum": 4096 },
+        "omittedInvocationCount": { "$ref": "#/$defs/counter" },
+        "captureDroppedInvocationCount": { "$ref": "#/$defs/counter" },
+        "captureStatus": { "enum": ["complete", "incomplete"] },
+        "chunkSize": { "const": 64 },
+        "chunkCount": { "type": "integer", "minimum": 0, "maximum": 64 },
+        "counters": { "oneOf": [{ "$ref": "#/$defs/counterArrayLegacy" }, { "$ref": "#/$defs/counterArray" }] },
+        "tickHistogram": { "$ref": "#/$defs/histogram" },
+        "firstPublicDispatchHistograms": { "$ref": "#/$defs/dispatchHistograms" },
+        "maxFirstPublicDispatchNanos": { "$ref": "#/$defs/nonnegativeLongString" },
+        "queueEvidence": { "$ref": "#/$defs/queueEvidence" }
+      },
+      "allOf": [
+        { "if": { "properties": { "numericFormatVersion": { "enum": [3, 4] } }, "required": ["numericFormatVersion"] }, "then": { "properties": { "counters": { "$ref": "#/$defs/counterArrayLegacy" } } } },
+        { "if": { "properties": { "numericFormatVersion": { "const": 5 } }, "required": ["numericFormatVersion"] }, "then": { "properties": { "counters": { "$ref": "#/$defs/counterArray" } } } },
+        { "if": { "properties": { "numericFormatVersion": { "const": 3 } }, "required": ["numericFormatVersion"] }, "then": { "not": { "required": ["queueEvidence"] } } },
+        { "if": { "properties": { "numericFormatVersion": { "enum": [4, 5] } }, "required": ["numericFormatVersion"] }, "then": { "required": ["queueEvidence"] } }
+      ]
+    },
+    "queueEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pendingQueueScans", "pendingQueueRecordSamples", "maxPendingGlobal", "maxPendingPerPlayer", "maxPendingAgeNanos", "maxPendingCleanupDelayNanos", "maxRecordsPerScan", "maxPlayerQueuesPerScan", "recordLimitPerScan", "playerQueueLimitPerScan"],
+      "properties": {
+        "pendingQueueScans": { "$ref": "#/$defs/counter" },
+        "pendingQueueRecordSamples": { "$ref": "#/$defs/counter" },
+        "maxPendingGlobal": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "maxPendingPerPlayer": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "maxPendingAgeNanos": { "$ref": "#/$defs/nonnegativeLongString" },
+        "maxPendingCleanupDelayNanos": { "$ref": "#/$defs/nonnegativeLongString" },
+        "maxRecordsPerScan": { "type": "integer", "minimum": 0, "maximum": 17 },
+        "maxPlayerQueuesPerScan": { "type": "integer", "minimum": 0, "maximum": 16 },
+        "recordLimitPerScan": { "const": 17 },
+        "playerQueueLimitPerScan": { "const": 16 }
+      }
+    },
+    "chunk": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "numericFormatVersion", "snapshotId", "index", "start", "records"],
+      "properties": {
+        "type": { "const": "numeric_snapshot_chunk" },
+        "numericFormatVersion": { "enum": [3, 4, 5] },
+        "snapshotId": { "$ref": "#/$defs/uuid" },
+        "index": { "type": "integer", "minimum": 0, "maximum": 63 },
+        "start": { "type": "integer", "minimum": 0, "maximum": 4095 },
+        "records": { "type": "array", "minItems": 1, "maxItems": 64, "items": { "$ref": "#/$defs/invocation" } }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "numericFormatVersion": { "const": 3 } }, "required": ["numericFormatVersion"] },
+          "then": { "properties": { "records": { "items": { "$ref": "#/$defs/invocationV3" } } } }
+        },
+        {
+          "if": { "properties": { "numericFormatVersion": { "const": 4 } }, "required": ["numericFormatVersion"] },
+          "then": { "properties": { "records": { "items": { "$ref": "#/$defs/invocationV4" } } } }
+        },
+        {
+          "if": { "properties": { "numericFormatVersion": { "const": 5 } }, "required": ["numericFormatVersion"] },
+          "then": { "properties": { "records": { "items": { "$ref": "#/$defs/invocationV5" } } } }
+        }
+      ]
+    }
+  }
+}

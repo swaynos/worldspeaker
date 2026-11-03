@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worldspeaker.invalid/schema/dialogue-v4-meta-schema.json",
+  "$vocabulary": {
+    "https://json-schema.org/draft/2020-12/vocab/core": true,
+    "https://json-schema.org/draft/2020-12/vocab/applicator": true,
+    "https://json-schema.org/draft/2020-12/vocab/unevaluated": true,
+    "https://json-schema.org/draft/2020-12/vocab/validation": true,
+    "https://json-schema.org/draft/2020-12/vocab/meta-data": true,
+    "https://json-schema.org/draft/2020-12/vocab/format-annotation": true,
+    "https://json-schema.org/draft/2020-12/vocab/content": true,
+    "https://worldspeaker.invalid/schema/dialogue-v4-vocabulary": true
+  },
+  "allOf": [
+    { "$ref": "https://json-schema.org/draft/2020-12/schema" },
+    {
+      "properties": {
+        "worldspeakerMaxUtf16Length": { "type": "integer", "minimum": 1 },
+        "worldspeakerNonBlankTrim": { "const": true },
+        "worldspeakerInt64Range": { "const": true },
+        "worldspeakerNonnegativeInt64Range": { "const": true },
+        "worldspeakerMaxUtf8Bytes": { "type": "integer", "minimum": 0 },
+        "worldspeakerSafePublicBody": { "const": true },
+        "worldspeakerPublicBodyUnicodeVersion": { "const": "15.0.0" },
+        "worldspeakerPublicBodyUnicodeDataSha256": { "const": "6fac8ff52897d02955f63e272c82f8a3fdaa6b6964d4502818c9581393656e23" }
+      }
+    }
+  ]
+}

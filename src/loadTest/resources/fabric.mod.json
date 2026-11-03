@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "id": "worldspeaker_compat_load_harness",
+  "version": "1.0.0",
+  "name": "Worldspeaker Compatibility Load Harness",
+  "environment": "server",
+  "entrypoints": {
+    "main": ["org.worldspeaker.load.WorldspeakerTickLoadHarness"]
+  },
+  "depends": {
+    "fabricloader": "0.20.1",
+    "minecraft": "1.21.1",
+    "fabric-api": "0.116.17+1.21.1",
+    "worldspeaker": "0.1.0-dev.1"
+  }
+}

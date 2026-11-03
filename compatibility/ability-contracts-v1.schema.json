@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worldspeaker.invalid/schema/ability-contracts-v1.schema.json",
+  "title": "Worldspeaker ability catalogue source v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "$id", "catalogueVersion", "limits", "semantics", "$defs", "contracts"],
+  "properties": {
+    "$schema": { "const": "https://json-schema.org/draft/2020-12/schema" },
+    "$id": { "const": "https://worldspeaker.invalid/schema/ability-contracts-v1.json" },
+    "catalogueVersion": { "const": 1 },
+    "limits": { "$ref": "#/$defs/limits" },
+    "semantics": { "$ref": "#/$defs/semantics" },
+    "$defs": {
+      "type": "object",
+      "additionalProperties": { "type": "object" },
+      "required": ["observeRequest", "observeArguments", "strikeRequest", "strikeArguments", "uuid", "safeInteger", "nullableSafeInteger", "resultState", "reasonCode", "observeFacts", "minecraftIdentifier", "step", "lightningFacts", "observeResult", "lightningResult", "baseResult"],
+      "propertyNames": { "enum": ["observeRequest", "observeArguments", "strikeRequest", "strikeArguments", "uuid", "safeInteger", "nullableSafeInteger", "resultState", "reasonCode", "observeFacts", "minecraftIdentifier", "step", "lightningFacts", "observeResult", "lightningResult", "baseResult"] }
+    },
+    "contracts": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        { "$ref": "#/$defs/observeContract" },
+        { "$ref": "#/$defs/lightningContract" }
+      ],
+      "items": false
+    }
+  },
+  "$defs": {
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["maxContracts", "maxRequestUtf8Bytes", "maxResultUtf8Bytes", "maxJsonDepth", "maxDiscoveryUtf8Bytes", "maxDiscoveryEntries", "maxPolicyGrantSummaries", "dialogueFrameUtf8Bytes", "abilityIdMaxAsciiBytes", "registryIdentifierMaxAsciiBytes", "jsonSafeIntegerMax"],
+      "properties": {
+        "maxContracts": { "const": 2 },
+        "maxRequestUtf8Bytes": { "const": 4096 },
+        "maxResultUtf8Bytes": { "const": 4096 },
+        "maxJsonDepth": { "const": 8 },
+        "maxDiscoveryUtf8Bytes": { "const": 65536 },
+        "maxDiscoveryEntries": { "const": 2 },
+        "maxPolicyGrantSummaries": { "const": 32 },
+        "dialogueFrameUtf8Bytes": { "const": 16384 },
+        "abilityIdMaxAsciiBytes": { "const": 256 },
+        "registryIdentifierMaxAsciiBytes": { "const": 256 },
+        "jsonSafeIntegerMax": { "const": 9007199254740991 }
+      }
+    },
+    "semantics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["configuredBindingIdentifiers", "outcomeIdentityMapping", "requestShape", "targetIdentity", "principal", "liveRequest", "delegation", "scope", "grantEvaluation", "failureClosed", "result", "float32", "presentation"],
+      "properties": {
+        "configuredBindingIdentifiers": { "type": "string", "minLength": 1 },
+        "outcomeIdentityMapping": { "type": "string", "pattern": "^UNRESOLVED_OD-PROTOCOL" },
+        "requestShape": { "const": ["abilityId", "contractVersion", "arguments"] },
+        "targetIdentity": { "type": "string", "minLength": 1 },
+        "principal": { "type": "string", "minLength": 1 },
+        "liveRequest": { "type": "string", "minLength": 1 },
+        "delegation": { "type": "string", "minLength": 1 },
+        "scope": { "type": "string", "minLength": 1 },
+        "grantEvaluation": { "type": "string", "minLength": 1 },
+        "failureClosed": { "type": "string", "minLength": 1 },
+        "result": { "type": "string", "minLength": 1 },
+        "float32": { "type": "string", "minLength": 1, "description": "Result binary32 values accept raw decimal tokens whose exact mathematical value equals either Java Float.toString(f) or ECMAScript JSON.stringify(Math.fround(f)) for the same finite float32 f; accepted values normalize to f. Preserve subnormals and Float.MAX_VALUE; reject underflow-to-zero, overflow, and other decimal rounding. Never clamp. JSON.stringify(-0) emits 0 and loses the negative-zero sign." },
+        "presentation": { "type": "string", "minLength": 1 }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "required": ["abilityId", "contractVersion", "kind", "purpose", "inputSchema", "resultSchema"],
+      "properties": {
+        "abilityId": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9._:-]+$", "worldspeakerAsciiOnly": true },
+        "contractVersion": { "const": 1 },
+        "kind": { "enum": ["query", "effect"] },
+        "purpose": { "type": "string", "minLength": 1, "maxLength": 512 },
+        "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "pattern": "^https://worldspeaker\\.invalid/schema/ability-contracts-v1\\.json#/" } } },
+        "resultSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "pattern": "^https://worldspeaker\\.invalid/schema/ability-contracts-v1\\.json#/" } } }
+      }
+    },
+    "permission": {
+      "type": "object", "additionalProperties": false,
+      "required": ["node", "default", "requester", "target", "denialPrecedence", "provider"],
+      "properties": {
+        "node": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "default": { "const": "deny" },
+        "requester": { "type": "string", "minLength": 1 },
+        "target": { "type": "string", "minLength": 1 },
+        "visualGrant": { "type": "string", "minLength": 1 },
+        "damageGrant": { "type": "string", "minLength": 1 },
+        "denialPrecedence": { "type": "string", "minLength": 1 },
+        "provider": { "type": "string", "minLength": 1 }
+      }
+    },
+    "bounds": {
+      "type": "object", "additionalProperties": false,
+      "required": ["targetCount", "rangeBlocks", "grantRangeBlocks", "inFlightPerRequester", "inFlightPerCharacter", "snapshotsPerRequesterPer2000Ms", "snapshotsPerCharacterPerSecond", "readDeadlineAfterAdmissionMs", "snapshotMaxAgeAtDeliveryMs", "resultUtf8Bytes", "reads", "prohibitedWork"],
+      "properties": {
+        "targetCount": { "type": "integer", "minimum": 1, "maximum": 1 },
+        "rangeBlocks": { "const": 64 }, "grantRangeBlocks": { "type": "array", "prefixItems": [{ "const": 0 }, { "const": 64 }], "items": false, "minItems": 2, "maxItems": 2 },
+        "inFlightPerRequester": { "type": "integer", "minimum": 1, "maximum": 1 }, "inFlightPerCharacter": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "snapshotsPerRequesterPer2000Ms": { "type": "integer", "minimum": 1, "maximum": 1 }, "snapshotsPerCharacterPerSecond": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "readDeadlineAfterAdmissionMs": { "const": 1000 }, "snapshotMaxAgeAtDeliveryMs": { "const": 2000 }, "resultUtf8Bytes": { "const": 4096 },
+        "reads": { "type": "array", "minItems": 1, "maxItems": 4, "items": { "type": "string", "minLength": 1 } },
+        "prohibitedWork": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "type": "string", "minLength": 1 } },
+        "oneEffectPerInvocation": { "const": true }, "requestAgeMaxMs": { "const": 15000 }, "actionAdmissionAgeMaxMs": { "const": 5000 },
+        "presentationCount": { "const": 1 }, "presentationLifetimeMaxMs": { "const": 1000 }, "damageAttemptsMax": { "const": 1 }, "damageMaxHealthPoints": { "const": 5 },
+        "attemptedDamage": { "type": "string", "minLength": 1 }, "footprintColumns": { "const": 81 }, "footprintSideBlocks": { "const": 9 }, "footprintChunksMax": { "const": 4 },
+        "cooldownRequesterMs": { "const": 30000 }, "cooldownTargetMs": { "const": 30000 }, "effectsPerCharacterPerSecond": { "const": 1 }, "audioRangeBlocks": { "const": 32 }, "audioVolumeMax": { "const": 1 }, "audioRecipientsMax": { "const": 32 }, "stepsMax": { "const": 2 },
+        "prohibitedMutations": { "type": "array", "minItems": 1, "maxItems": 16, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "lightningBounds": {
+      "type": "object", "additionalProperties": false,
+      "required": ["oneEffectPerInvocation", "requestAgeMaxMs", "actionAdmissionAgeMaxMs", "presentationCount", "presentationLifetimeMaxMs", "damageAttemptsMax", "damageMaxHealthPoints", "attemptedDamage", "footprintColumns", "footprintSideBlocks", "footprintChunksMax", "cooldownRequesterMs", "cooldownTargetMs", "effectsPerCharacterPerSecond", "inFlightPerCharacter", "audioRangeBlocks", "audioVolumeMax", "audioRecipientsMax", "stepsMax", "resultUtf8Bytes", "prohibitedMutations"],
+      "properties": {
+        "oneEffectPerInvocation": { "const": true }, "requestAgeMaxMs": { "const": 15000 }, "actionAdmissionAgeMaxMs": { "const": 5000 },
+        "presentationCount": { "const": 1 }, "presentationLifetimeMaxMs": { "const": 1000 }, "damageAttemptsMax": { "const": 1 }, "damageMaxHealthPoints": { "const": 5 },
+        "attemptedDamage": { "type": "string", "minLength": 1 }, "footprintColumns": { "const": 81 }, "footprintSideBlocks": { "const": 9 }, "footprintChunksMax": { "const": 4 },
+        "cooldownRequesterMs": { "const": 30000 }, "cooldownTargetMs": { "const": 30000 }, "effectsPerCharacterPerSecond": { "const": 1 }, "inFlightPerCharacter": { "const": 1 },
+        "audioRangeBlocks": { "const": 32 }, "audioVolumeMax": { "const": 1 }, "audioRecipientsMax": { "const": 32 }, "stepsMax": { "const": 2 },
+        "resultUtf8Bytes": { "const": 4096 }, "prohibitedMutations": { "type": "array", "minItems": 1, "maxItems": 16, "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "preconditions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request", "target", "scope", "freshness", "revalidation"],
+      "properties": {
+        "request": { "type": "string", "minLength": 1 }, "target": { "type": "string", "minLength": 1 }, "scope": { "type": "string", "minLength": 1 },
+        "freshness": { "type": "string", "minLength": 1 }, "revalidation": { "type": "string", "minLength": 1 }, "placement": { "type": "string", "minLength": 1 }, "footprint": { "type": "string", "minLength": 1 }, "protection": { "type": "string", "minLength": 1 }, "sky": { "type": "string", "minLength": 1 }
+      }
+    },
+    "lightningPreconditions": {
+      "type": "object", "additionalProperties": false,
+      "required": ["request", "target", "placement", "footprint", "protection", "sky", "freshness"],
+      "properties": {
+        "request": { "type": "string", "minLength": 1 }, "target": { "type": "string", "minLength": 1 },
+        "placement": { "type": "string", "minLength": 1 }, "footprint": { "type": "string", "minLength": 1 },
+        "protection": { "type": "string", "minLength": 1 }, "sky": { "type": "string", "minLength": 1 },
+        "freshness": { "type": "string", "minLength": 1 }
+      }
+    },
+    "execution": {
+      "type": "object", "additionalProperties": false,
+      "required": ["implementationStatus", "qualificationStatus", "availability", "futureThread"],
+      "properties": {
+        "implementationStatus": { "const": "UNIMPLEMENTED" }, "qualificationStatus": { "const": "UNQUALIFIED" }, "availability": { "const": "UNAVAILABLE" },
+        "futureThread": { "type": "string", "minLength": 1 }, "accounting": { "type": "string", "minLength": 1 }, "timeouts": { "type": "string", "minLength": 1 }, "restart": { "type": "string", "minLength": 1 },
+        "reservation": { "type": "string", "minLength": 1 }, "steps": { "type": "array", "maxItems": 2, "items": { "type": "string" } }, "nonlethal": { "type": "string", "minLength": 1 }, "nativeBehavior": { "type": "string", "minLength": 1 }, "protectionExternalClaimsMode": { "const": ["REQUIRED", "NONE"] }
+      }
+    },
+    "reliability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["identity", "duplicate", "expiry", "retention", "effectJournal"],
+      "properties": {
+        "identity": { "type": "string", "minLength": 1 }, "duplicate": { "type": "string", "minLength": 1 }, "expiry": { "type": "string", "minLength": 1 }, "retention": { "type": "string", "minLength": 1 }, "effectJournal": { "type": "string", "minLength": 1 },
+        "duplicates": { "type": "string", "minLength": 1 }, "durability": { "type": "string", "minLength": 1 }, "preOperation": { "type": "string", "minLength": 1 }, "postOperation": { "type": "string", "minLength": 1 }, "unknown": { "type": "string", "minLength": 1 }, "restart": { "type": "string", "minLength": 1 }
+      }
+    },
+    "lightningReliability": {
+      "type": "object", "additionalProperties": false,
+      "required": ["identity", "duplicates", "durability", "preOperation", "postOperation", "unknown", "restart", "retention"],
+      "properties": {
+        "identity": { "type": "string", "minLength": 1 }, "duplicates": { "type": "string", "minLength": 1 },
+        "durability": { "type": "string", "minLength": 1 }, "preOperation": { "type": "string", "minLength": 1 },
+        "postOperation": { "type": "string", "minLength": 1 }, "unknown": { "type": "string", "minLength": 1 },
+        "restart": { "type": "string", "minLength": 1 }, "retention": { "type": "string", "minLength": 1 }
+      }
+    },
+    "privacy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["routineLogs", "resultAudience"],
+      "properties": {
+        "excluded": { "type": "array", "maxItems": 12, "items": { "type": "string" } }, "routineLogs": { "type": "string", "minLength": 1 }, "snapshotRetention": { "type": "string", "minLength": 1 },
+        "privateEvidence": { "type": "array", "maxItems": 12, "items": { "type": "string" } }, "resultAudience": { "type": "string", "minLength": 1 }
+      }
+    },
+    "presentation": {
+      "type": "object", "additionalProperties": false,
+      "required": ["publicNarration", "receipt"],
+      "properties": {
+        "publicNarration": { "type": "string", "minLength": 1 }, "receipt": { "type": "string", "minLength": 1 }, "audio": { "type": "string", "minLength": 1 }
+      }
+    },
+    "contract": {
+      "allOf": [
+        { "$ref": "#/$defs/identity" },
+        { "type": "object", "required": ["permission", "bounds", "preconditions", "execution", "reliability", "privacy", "presentation"], "properties": {
+          "permission": { "$ref": "#/$defs/permission" }, "bounds": { "type": "object" }, "preconditions": { "type": "object" }, "execution": { "$ref": "#/$defs/execution" }, "reliability": { "type": "object" }, "privacy": { "$ref": "#/$defs/privacy" }, "presentation": { "$ref": "#/$defs/presentation" }
+        } }
+      ],
+      "unevaluatedProperties": false
+    },
+    "observeContract": {
+      "allOf": [
+        { "$ref": "#/$defs/contract" },
+        { "type": "object", "properties": { "abilityId": { "const": "worldspeaker.core.observe_player" }, "kind": { "const": "query" }, "inputSchema": { "const": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/observeRequest" } }, "resultSchema": { "const": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/observeResult" } }, "bounds": { "$ref": "#/$defs/bounds" }, "preconditions": { "$ref": "#/$defs/preconditions" }, "reliability": { "$ref": "#/$defs/reliability" } }, "required": ["abilityId", "kind", "inputSchema", "resultSchema"] }
+      ]
+    },
+    "lightningContract": {
+      "allOf": [
+        { "$ref": "#/$defs/contract" },
+        { "type": "object", "properties": { "abilityId": { "const": "worldspeaker.core.strike_lightning" }, "kind": { "const": "effect" }, "inputSchema": { "const": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/strikeRequest" } }, "resultSchema": { "const": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/lightningResult" } }, "bounds": { "$ref": "#/$defs/lightningBounds" }, "preconditions": { "$ref": "#/$defs/lightningPreconditions" }, "reliability": { "$ref": "#/$defs/lightningReliability" } }, "required": ["abilityId", "kind", "inputSchema", "resultSchema"] }
+      ]
+    }
+  }
+}

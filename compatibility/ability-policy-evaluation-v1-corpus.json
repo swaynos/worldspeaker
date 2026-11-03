@@ -1,0 +1,1062 @@
+{
+  "description": "Pure policy-evaluation parity vectors; conditional decisions never authorize execution.",
+  "binding": {
+    "serverId": "fixture-server",
+    "worldId": "fixture-world",
+    "characterId": "fixture-character",
+    "agentId": "fixture-agent"
+  },
+  "requesterId": "00000000-0000-4000-8000-000000000041",
+  "invocationId": "00000000-0000-4000-8000-000000000066",
+  "targetId": "00000000-0000-4000-8000-000000000043",
+  "facts": {
+    "currentWorldMatches": true,
+    "requestLive": true,
+    "requesterConnected": true,
+    "targetResolved": true,
+    "targetPlayerId": "00000000-0000-4000-8000-000000000043",
+    "targetConnected": true,
+    "targetAlive": true,
+    "targetNotSpectating": true,
+    "targetChunkLoadedAndTicking": true,
+    "requesterDimension": "minecraft:overworld",
+    "targetDimension": "minecraft:overworld",
+    "requesterFeet": { "x": 0, "y": 64, "z": 0 },
+    "targetFeet": { "x": 3, "y": 64, "z": 4 },
+    "worldBorder": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+    "lightningSkyAccess": true,
+    "protectedSpawnClear": true,
+    "protectedClaimsClear": true
+  },
+  "vectors": [
+    {
+      "name": "complete-explicit-other-observe-with-narrowed-region-and-intervals",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 7,
+        "grants": [{
+          "id": "observe-other",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "maxRangeBlocks": 8,
+          "region": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "limits": { "requesterIntervalMs": 5000, "characterIntervalMs": 1000 }
+        }],
+        "denials": [],
+        "protection": { "externalClaimsMode": "REQUIRED" }
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "observe-other",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 8,
+          "region": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "worldBorder": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "effectiveSpatialBounds": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 5000, "characterIntervalMs": 1000 }
+        },
+        "maxRangeBlocks": 8,
+        "mode": "observe",
+        "maxDamage": null,
+        "limits": { "requesterIntervalMs": 5000, "characterIntervalMs": 1000 },
+        "unresolvedChecks": ["normative_world_identity_mapping", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "explicit-denial-overrides-complete-allow",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 8,
+        "grants": [{
+          "id": "observe-allow",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [{ "id": "observe-deny", "abilityId": "worldspeaker.core.observe_player", "contractVersion": 1 }],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": { "status": "DENIED", "reasonCode": "explicit_denial", "selectedGrantId": null, "effectiveRestrictions": null }
+    },
+    {
+      "name": "requester-cannot-use-another-requesters-complete-grant",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 9,
+        "grants": [{
+          "id": "observe-private",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000042"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": { "status": "DENIED", "reasonCode": "requester_not_granted", "selectedGrantId": null, "effectiveRestrictions": null }
+    },
+    {
+      "name": "target-must-be-self-or-listed-on-the-same-complete-grant",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 10,
+        "grants": [{
+          "id": "observe-target-a",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000044"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": { "status": "DENIED", "reasonCode": "target_not_granted", "selectedGrantId": null, "effectiveRestrictions": null }
+    },
+    {
+      "name": "wrong-bound-character-does-not-match-even-with-a-complete-grant",
+      "binding": { "serverId": "fixture-server", "worldId": "fixture-world", "characterId": "different-character", "agentId": "fixture-agent" },
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 11,
+        "grants": [{
+          "id": "observe-bound",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": { "status": "DENIED", "reasonCode": "no_complete_grant", "selectedGrantId": null, "effectiveRestrictions": null }
+    },
+    {
+      "name": "trusted-target-dimension-must-be-in-the-complete-grant",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 12,
+        "grants": [{
+          "id": "observe-overworld",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "requesterDimension": "minecraft:the_nether", "targetDimension": "minecraft:the_nether" },
+      "expected": { "status": "DENIED", "reasonCode": "dimension_not_granted", "selectedGrantId": null, "effectiveRestrictions": null }
+    },
+    {
+      "name": "lexical-first-narrow-grant-blocks-later-broader-grant",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 13,
+        "grants": [
+          { "id": "z-broad", "characterId": "fixture-character", "abilityId": "worldspeaker.core.observe_player", "contractVersion": 1, "requesterIds": ["00000000-0000-4000-8000-000000000041"], "otherTargetIds": ["00000000-0000-4000-8000-000000000043"], "dimensions": ["minecraft:overworld"], "maxRangeBlocks": 64 },
+          { "id": "a-narrow", "characterId": "fixture-character", "abilityId": "worldspeaker.core.observe_player", "contractVersion": 1, "requesterIds": ["00000000-0000-4000-8000-000000000041"], "otherTargetIds": ["00000000-0000-4000-8000-000000000043"], "dimensions": ["minecraft:overworld"], "maxRangeBlocks": 4 }
+        ],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": {
+        "status": "DENIED", "reasonCode": "out_of_scope", "selectedGrantId": "a-narrow",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 4,
+          "region": null,
+          "worldBorder": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "effectiveSpatialBounds": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 }
+        },
+        "maxRangeBlocks": 4, "mode": "observe", "maxDamage": null
+      }
+    },
+    {
+      "name": "lexical-first-visual-grant-denies-damage-without-fallback",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 14,
+        "grants": [
+          { "id": "z-damage", "characterId": "fixture-character", "abilityId": "worldspeaker.core.strike_lightning", "contractVersion": 1, "requesterIds": ["00000000-0000-4000-8000-000000000041"], "otherTargetIds": ["00000000-0000-4000-8000-000000000043"], "dimensions": ["minecraft:overworld"], "allowVisual": true, "allowDamage": true, "maxDamage": 5 },
+          { "id": "a-visual", "characterId": "fixture-character", "abilityId": "worldspeaker.core.strike_lightning", "contractVersion": 1, "requesterIds": ["00000000-0000-4000-8000-000000000041"], "otherTargetIds": ["00000000-0000-4000-8000-000000000043"], "dimensions": ["minecraft:overworld"], "allowVisual": true, "allowDamage": false }
+        ],
+        "denials": [],
+        "protection": { "externalClaimsMode": "REQUIRED" }
+      },
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": false,
+      "expected": {
+        "status": "DENIED", "reasonCode": "selected_grant_mode_denied", "selectedGrantId": "a-visual",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": null,
+          "worldBorder": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "effectiveSpatialBounds": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "mode": "damage",
+          "maxDamage": null,
+          "limits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 }
+        },
+        "maxRangeBlocks": 64, "mode": "damage", "maxDamage": null
+      }
+    },
+    {
+      "name": "lightning-complete-9x9-footprint-fits-negative-half-open-region-and-border",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 15,
+        "grants": [{
+          "id": "lightning-footprint",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.strike_lightning",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "limits": {},
+          "allowVisual": true
+        }],
+        "denials": [],
+        "protection": { "externalClaimsMode": "NONE" }
+      },
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000041",
+      "visualOnly": true,
+      "factsOverrides": {
+        "targetPlayerId": "00000000-0000-4000-8000-000000000041",
+        "requesterFeet": { "x": 0.25, "y": 64, "z": -0.25 },
+        "targetFeet": { "x": 0.25, "y": 64, "z": -0.25 },
+        "worldBorder": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 }
+      },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "lightning-footprint",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "worldBorder": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "effectiveSpatialBounds": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "mode": "visual",
+          "maxDamage": null,
+          "limits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 }
+        },
+        "maxRangeBlocks": 64,
+        "mode": "visual",
+        "maxDamage": null,
+        "limits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 },
+        "unresolvedChecks": ["normative_world_identity_mapping", "durable_preparation", "native_lightning_side_effect_suppression", "unknown_outcome_persistence", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "lightning-footprint-outside-border-denied-even-when-target-feet-are-inside",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 16,
+        "grants": [{
+          "id": "lightning-border",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.strike_lightning",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "dimensions": ["minecraft:overworld"],
+          "allowVisual": true
+        }],
+        "denials": [],
+        "protection": { "externalClaimsMode": "NONE" }
+      },
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000041",
+      "visualOnly": true,
+      "factsOverrides": {
+        "targetPlayerId": "00000000-0000-4000-8000-000000000041",
+        "requesterFeet": { "x": 1.25, "y": 64, "z": 0.25 },
+        "targetFeet": { "x": 1.25, "y": 64, "z": 0.25 },
+        "worldBorder": { "minX": -4, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 }
+      },
+      "expected": {
+        "status": "DENIED", "reasonCode": "out_of_scope", "selectedGrantId": "lightning-border",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": null,
+          "worldBorder": { "minX": -4, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "effectiveSpatialBounds": { "minX": -4, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "mode": "visual",
+          "maxDamage": null,
+          "limits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 }
+        }
+      }
+    },
+    {
+      "name": "grant-wider-than-current-border-returns-the-narrow-border-intersection",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 30,
+        "grants": [{
+          "id": "observe-wide-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 }
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": {
+        "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 }
+      },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "observe-wide-region",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "effectiveSpatialBounds": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 }
+        },
+        "unresolvedChecks": ["normative_world_identity_mapping", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "grant-region-and-current-border-partially-intersect",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 31,
+        "grants": [{
+          "id": "observe-partial-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 }
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": {
+        "worldBorder": { "minX": -5.5, "maxXExclusive": 15.5, "minZ": -5.25, "maxZExclusive": 15.25 }
+      },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "observe-partial-region",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "worldBorder": { "minX": -5.5, "maxXExclusive": 15.5, "minZ": -5.25, "maxZExclusive": 15.25 },
+          "effectiveSpatialBounds": { "minX": -5.5, "maxXExclusive": 10, "minZ": -5.25, "maxZExclusive": 10 },
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 }
+        },
+        "unresolvedChecks": ["normative_world_identity_mapping", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "disjoint-grant-region-and-current-border-deny-with-empty-intersection",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 32,
+        "grants": [{
+          "id": "observe-disjoint-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 }
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": {
+        "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 }
+      },
+      "factProfiles": [
+        { "name": "both-feet-null", "factsOverrides": { "requesterFeet": null, "targetFeet": null } },
+        { "name": "requester-feet-null", "factsOverrides": { "requesterFeet": null } },
+        { "name": "target-feet-null", "factsOverrides": { "targetFeet": null } },
+        { "name": "both-feet-present", "factsOverrides": {} }
+      ],
+      "expected": {
+        "status": "DENIED",
+        "reasonCode": "out_of_scope",
+        "selectedGrantId": null,
+        "candidateGrantIds": [],
+        "effectiveRestrictions": null,
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "limitDemand": null,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "unknown-current-border-stays-null-and-unresolved",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 33,
+        "grants": [{
+          "id": "observe-unknown-border",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 }
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "worldBorder": null },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "observe-unknown-border",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "worldBorder": null,
+          "effectiveSpatialBounds": null,
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 }
+        },
+        "unresolvedChecks": ["normative_world_identity_mapping", "world_border", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "lightning-9x9-footprint-fits-narrow-current-border-inside-wide-grant",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 34,
+        "grants": [{
+          "id": "lightning-wide-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.strike_lightning",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "allowVisual": true
+        }],
+        "denials": [],
+        "protection": { "externalClaimsMode": "NONE" }
+      },
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000041",
+      "visualOnly": true,
+      "factsOverrides": {
+        "targetPlayerId": "00000000-0000-4000-8000-000000000041",
+        "requesterFeet": { "x": 0.25, "y": 64, "z": 0.25 },
+        "targetFeet": { "x": 0.25, "y": 64, "z": 0.25 },
+        "worldBorder": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 }
+      },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "lightning-wide-region",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "worldBorder": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "effectiveSpatialBounds": { "minX": -5, "maxXExclusive": 5, "minZ": -5, "maxZExclusive": 5 },
+          "mode": "visual",
+          "maxDamage": null,
+          "limits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 }
+        },
+        "unresolvedChecks": ["normative_world_identity_mapping", "durable_preparation", "native_lightning_side_effect_suppression", "unknown_outcome_persistence", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "lightning-9x9-must-fit-entire-partial-intersection-not-only-target-feet",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 35,
+        "grants": [{
+          "id": "lightning-partial-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.strike_lightning",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": -3, "maxXExclusive": 6, "minZ": -3, "maxZExclusive": 6 },
+          "allowVisual": true
+        }],
+        "denials": [],
+        "protection": { "externalClaimsMode": "NONE" }
+      },
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000041",
+      "visualOnly": true,
+      "factsOverrides": {
+        "targetPlayerId": "00000000-0000-4000-8000-000000000041",
+        "requesterFeet": { "x": 0.25, "y": 64, "z": 0.25 },
+        "targetFeet": { "x": 0.25, "y": 64, "z": 0.25 },
+        "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 }
+      },
+      "expected": {
+        "status": "DENIED",
+        "reasonCode": "out_of_scope",
+        "selectedGrantId": "lightning-partial-region",
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": -3, "maxXExclusive": 6, "minZ": -3, "maxZExclusive": 6 },
+          "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 },
+          "effectiveSpatialBounds": { "minX": -3, "maxXExclusive": 6, "minZ": -3, "maxZExclusive": 6 },
+          "mode": "visual",
+          "maxDamage": null,
+          "limits": { "requesterCooldownMs": 30000, "targetCooldownMs": 30000, "characterIntervalMs": 1000 }
+        }
+      }
+    },
+    {
+      "name": "unsupported-contract-version-is-denied",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 17,
+        "grants": [{
+          "id": "observe-v1-only",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 2,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": { "status": "DENIED", "reasonCode": "unsupported_contract", "selectedGrantId": null, "effectiveRestrictions": null }
+    },
+    {
+      "name": "stale-request-generation-is-not-a-conditional-grant",
+      "authorityCurrent": false,
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 18,
+        "grants": [{
+          "id": "observe-generation",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "expected": { "status": "DENIED", "reasonCode": "stale_context", "selectedGrantId": null, "effectiveRestrictions": null }
+    },
+    {
+      "name": "resolved-target-without-player-identity-is-unavailable",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 19,
+        "grants": [{
+          "id": "observe-target",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "targetPlayerId": null },
+      "expected": {
+        "status": "DENIED",
+        "reasonCode": "target_unavailable",
+        "selectedGrantId": null,
+        "candidateGrantIds": [],
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "unresolved-target-cannot-retain-an-observed-player-identity",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 20,
+        "grants": [{
+          "id": "observe-target",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "targetResolved": false },
+      "expected": {
+        "status": "DENIED",
+        "reasonCode": "target_unavailable",
+        "selectedGrantId": null,
+        "candidateGrantIds": [],
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "resolved-player-identity-must-match-requested-target-not-requester",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 21,
+        "grants": [{
+          "id": "observe-target",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "targetPlayerId": "00000000-0000-4000-8000-000000000041" },
+      "expected": {
+        "status": "DENIED",
+        "reasonCode": "target_unavailable",
+        "selectedGrantId": null,
+        "candidateGrantIds": [],
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "resolved-matching-target-with-missing-dimension-fact-remains-conditional",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 22,
+        "grants": [{
+          "id": "observe-target",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "targetDimension": null },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": null,
+        "candidateGrantIds": ["observe-target"],
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "unresolvedChecks": ["normative_world_identity_mapping", "same_dimension", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "resolved-matching-target-with-missing-position-facts-remains-conditional",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 24,
+        "grants": [{
+          "id": "observe-target",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "requesterFeet": null, "targetFeet": null },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "observe-target",
+        "candidateGrantIds": ["observe-target"],
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": null,
+          "worldBorder": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "effectiveSpatialBounds": { "minX": -100, "maxXExclusive": 100, "minZ": -100, "maxZExclusive": 100 },
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 }
+        },
+        "hasEffectiveRestrictions": true,
+        "hasLimitDemand": true,
+        "unresolvedChecks": ["normative_world_identity_mapping", "requester_target_range", "grant_region", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "discovery-without-an-intent-target-remains-candidate-only-when-resolution-is-false",
+      "mode": "discovery",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 23,
+        "grants": [{
+          "id": "observe-discovery",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"]
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "visualOnly": true,
+      "factsOverrides": { "targetResolved": false, "targetPlayerId": null },
+      "expected": {
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": null,
+        "candidateGrantIds": ["observe-discovery"],
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "lightning-known-empty-intersection-denied-for-every-feet-presence-combination",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 25,
+        "grants": [{
+          "id": "lightning-disjoint-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.strike_lightning",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 },
+          "allowVisual": true
+        }],
+        "denials": [],
+        "protection": { "externalClaimsMode": "NONE" }
+      },
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000041",
+      "visualOnly": true,
+      "factsOverrides": {
+        "targetPlayerId": "00000000-0000-4000-8000-000000000041",
+        "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 }
+      },
+      "factProfiles": [
+        { "name": "both-feet-null", "factsOverrides": { "requesterFeet": null, "targetFeet": null } },
+        { "name": "requester-feet-null", "factsOverrides": { "requesterFeet": null } },
+        { "name": "target-feet-null", "factsOverrides": { "targetFeet": null } },
+        { "name": "both-feet-present", "factsOverrides": {} }
+      ],
+      "expected": {
+        "abilityId": "worldspeaker.core.strike_lightning",
+        "contractVersion": 1,
+        "policyRevision": 25,
+        "status": "DENIED",
+        "reasonCode": "out_of_scope",
+        "selectedGrantId": null,
+        "candidateGrantIds": [],
+        "effectiveRestrictions": null,
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "limitDemand": null,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "known-empty-intersection-includes-disjoint-and-touching-half-open-edges-per-axis",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 26,
+        "grants": [{
+          "id": "observe-half-open-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 }
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factProfiles": [
+        { "name": "x-disjoint-z-overlap", "factsOverrides": { "requesterFeet": null, "targetFeet": null, "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": 20, "maxZExclusive": 40 } } },
+        { "name": "x-touch-at-region-min-z-overlap", "factsOverrides": { "requesterFeet": null, "targetFeet": null, "worldBorder": { "minX": -10, "maxXExclusive": 20, "minZ": 20, "maxZExclusive": 40 } } },
+        { "name": "x-touch-at-region-max-z-overlap", "factsOverrides": { "requesterFeet": null, "targetFeet": null, "worldBorder": { "minX": 30, "maxXExclusive": 40, "minZ": 20, "maxZExclusive": 40 } } },
+        { "name": "z-disjoint-x-overlap", "factsOverrides": { "requesterFeet": null, "targetFeet": null, "worldBorder": { "minX": 20, "maxXExclusive": 40, "minZ": -10, "maxZExclusive": 10 } } },
+        { "name": "z-touch-at-region-min-x-overlap", "factsOverrides": { "requesterFeet": null, "targetFeet": null, "worldBorder": { "minX": 20, "maxXExclusive": 40, "minZ": -10, "maxZExclusive": 20 } } },
+        { "name": "z-touch-at-region-max-x-overlap", "factsOverrides": { "requesterFeet": null, "targetFeet": null, "worldBorder": { "minX": 20, "maxXExclusive": 40, "minZ": 30, "maxZExclusive": 40 } } }
+      ],
+      "expected": {
+        "abilityId": "worldspeaker.core.observe_player",
+        "contractVersion": 1,
+        "policyRevision": 26,
+        "status": "DENIED",
+        "reasonCode": "out_of_scope",
+        "selectedGrantId": null,
+        "candidateGrantIds": [],
+        "effectiveRestrictions": null,
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "limitDemand": null,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "lexical-first-empty-intersection-does-not-fall-through-to-broader-grant",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 27,
+        "grants": [
+          { "id": "z-broad", "characterId": "fixture-character", "abilityId": "worldspeaker.core.observe_player", "contractVersion": 1, "requesterIds": ["00000000-0000-4000-8000-000000000041"], "otherTargetIds": ["00000000-0000-4000-8000-000000000043"], "dimensions": ["minecraft:overworld"] },
+          { "id": "a-narrow-disjoint", "characterId": "fixture-character", "abilityId": "worldspeaker.core.observe_player", "contractVersion": 1, "requesterIds": ["00000000-0000-4000-8000-000000000041"], "otherTargetIds": ["00000000-0000-4000-8000-000000000043"], "dimensions": ["minecraft:overworld"], "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 } }
+        ],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": {
+        "requesterFeet": null,
+        "targetFeet": null,
+        "worldBorder": { "minX": -10, "maxXExclusive": 10, "minZ": -10, "maxZExclusive": 10 }
+      },
+      "expected": {
+        "abilityId": "worldspeaker.core.observe_player",
+        "contractVersion": 1,
+        "policyRevision": 27,
+        "status": "DENIED",
+        "reasonCode": "out_of_scope",
+        "selectedGrantId": null,
+        "candidateGrantIds": [],
+        "effectiveRestrictions": null,
+        "hasEffectiveRestrictions": false,
+        "hasLimitDemand": false,
+        "limitDemand": null,
+        "unresolvedChecks": []
+      }
+    },
+    {
+      "name": "known-nonempty-intersection-with-missing-feet-remains-conditional",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 28,
+        "grants": [{
+          "id": "observe-overlap-region",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 }
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": {
+        "requesterFeet": null,
+        "targetFeet": null,
+        "worldBorder": { "minX": 10, "maxXExclusive": 40, "minZ": 10, "maxZExclusive": 40 }
+      },
+      "expected": {
+        "abilityId": "worldspeaker.core.observe_player",
+        "contractVersion": 1,
+        "policyRevision": 28,
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "observe-overlap-region",
+        "candidateGrantIds": ["observe-overlap-region"],
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 },
+          "worldBorder": { "minX": 10, "maxXExclusive": 40, "minZ": 10, "maxZExclusive": 40 },
+          "effectiveSpatialBounds": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 },
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 }
+        },
+        "hasEffectiveRestrictions": true,
+        "hasLimitDemand": true,
+        "unresolvedChecks": ["normative_world_identity_mapping", "requester_target_range", "grant_region", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    },
+    {
+      "name": "unknown-border-with-missing-feet-is-unresolved-not-known-empty",
+      "policy": {
+        "schemaVersion": 1,
+        "revision": 29,
+        "grants": [{
+          "id": "observe-unknown-border-no-feet",
+          "characterId": "fixture-character",
+          "abilityId": "worldspeaker.core.observe_player",
+          "contractVersion": 1,
+          "requesterIds": ["00000000-0000-4000-8000-000000000041"],
+          "otherTargetIds": ["00000000-0000-4000-8000-000000000043"],
+          "dimensions": ["minecraft:overworld"],
+          "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 }
+        }],
+        "denials": [],
+        "protection": {}
+      },
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "targetId": "00000000-0000-4000-8000-000000000043",
+      "visualOnly": true,
+      "factsOverrides": { "requesterFeet": null, "targetFeet": null, "worldBorder": null },
+      "expected": {
+        "abilityId": "worldspeaker.core.observe_player",
+        "contractVersion": 1,
+        "policyRevision": 29,
+        "status": "CONDITIONAL",
+        "reasonCode": "none",
+        "selectedGrantId": "observe-unknown-border-no-feet",
+        "candidateGrantIds": ["observe-unknown-border-no-feet"],
+        "effectiveRestrictions": {
+          "maxRangeBlocks": 64,
+          "region": { "minX": 20, "maxXExclusive": 30, "minZ": 20, "maxZExclusive": 30 },
+          "worldBorder": null,
+          "effectiveSpatialBounds": null,
+          "mode": "observe",
+          "maxDamage": null,
+          "limits": { "requesterIntervalMs": 2000, "characterIntervalMs": 250 }
+        },
+        "hasEffectiveRestrictions": true,
+        "hasLimitDemand": true,
+        "unresolvedChecks": ["normative_world_identity_mapping", "requester_target_range", "world_border", "grant_region", "observation_freshness", "atomic_limit_admission", "execution_boundary_policy_recheck", "tick_thread_revalidation", "authoritative_outcome_identity_mapping"]
+      }
+    }
+  ]
+}

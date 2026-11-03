@@ -1,0 +1,63 @@
+{
+  "policy": "JSON integers are mathematical integers: exact decimal/exponent values with no fractional part are accepted when in range (including 0.0, 1e0, and -0 where the nonnegative range permits). Numeric strings never coerce; fractional values in integer fields and unsafe integers are rejected before binary-number rounding can change the result.",
+  "valid": [
+    {
+      "name": "integral decimal and exponent spellings",
+      "rawJson": "{\"schemaVersion\":1.0,\"revision\":1e0,\"grants\":[{\"id\":\"g\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1.0,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"maxRangeBlocks\":6.4e1}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "negative zero is mathematical zero for revision",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":-0,\"grants\":[{\"id\":\"g\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1e0,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"maxRangeBlocks\":64.0}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "zero revision remains mathematical zero with a large exponent",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":0e2147483648,\"grants\":[],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "exact decimal range and damage ceilings",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":0.0,\"grants\":[{\"id\":\"g\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1e0,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"maxRangeBlocks\":64.000,\"allowVisual\":true,\"allowDamage\":true,\"maxDamage\":5.0}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "maximum safe revision in exponent notation",
+      "rawJson": "{\"schemaVersion\":1e0,\"revision\":9.007199254740991e15,\"grants\":[],\"denials\":[],\"protection\":{}}"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "fractional schema version rounds to one in binary",
+      "rawJson": "{\"schemaVersion\":1.00000000000000001,\"revision\":0,\"grants\":[],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "fractional revision rounds to one in binary",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":1.00000000000000001,\"grants\":[],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "fraction rounds to maximum safe revision",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":9007199254740991.1,\"grants\":[],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "unsafe revision expressed with exponent",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":9.007199254740992e15,\"grants\":[],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "revision exponent exceeds exact decimal implementation range",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":1e2147483648,\"grants\":[],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "fractional contract version rounds to one in binary",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"g\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1.00000000000000001,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"]}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "range exceeds ceiling but rounds to 64 in binary",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"g\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.observe_player\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"maxRangeBlocks\":64.0000000000000001}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "damage exceeds ceiling but rounds to five in binary",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":0,\"grants\":[{\"id\":\"g\",\"characterId\":\"fixture-character\",\"abilityId\":\"worldspeaker.core.strike_lightning\",\"contractVersion\":1,\"requesterIds\":[\"00000000-0000-4000-8000-000000000041\"],\"dimensions\":[\"minecraft:overworld\"],\"allowVisual\":true,\"allowDamage\":true,\"maxDamage\":5.0000000000000001}],\"denials\":[],\"protection\":{}}"
+    },
+    {
+      "name": "numeric string does not coerce to revision integer",
+      "rawJson": "{\"schemaVersion\":1,\"revision\":\"1\",\"grants\":[],\"denials\":[],\"protection\":{}}"
+    }
+  ]
+}

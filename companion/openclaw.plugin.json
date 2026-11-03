@@ -1,0 +1,32 @@
+{
+  "id": "worldspeaker",
+  "name": "Worldspeaker",
+  "description": "A bounded, authenticated Minecraft server channel.",
+  "version": "0.1.0-dev.1",
+  "categories": ["channels"],
+  "channels": ["worldspeaker"],
+  "activation": {
+    "onStartup": true
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "channelConfigs": {
+    "worldspeaker": {
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["enabled", "configFile"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "configFile": { "type": "string", "minLength": 1, "maxLength": 1024 }
+        }
+      },
+      "uiHints": {
+        "configFile": { "label": "Owner-only Worldspeaker startup bundle" }
+      }
+    }
+  }
+}

@@ -1,0 +1,328 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://worldspeaker.invalid/schema/ability-contracts-v1.json",
+  "catalogueVersion": 1,
+  "limits": {
+    "maxContracts": 2,
+    "maxRequestUtf8Bytes": 4096,
+    "maxResultUtf8Bytes": 4096,
+    "maxJsonDepth": 8,
+    "maxDiscoveryUtf8Bytes": 65536,
+    "maxDiscoveryEntries": 2,
+    "maxPolicyGrantSummaries": 32,
+    "dialogueFrameUtf8Bytes": 16384,
+    "abilityIdMaxAsciiBytes": 256,
+    "registryIdentifierMaxAsciiBytes": 256,
+    "jsonSafeIntegerMax": 9007199254740991
+  },
+  "semantics": {
+    "configuredBindingIdentifiers": "ASCII [A-Za-z0-9._:-]{1,128}; these are not normative outcome UUIDs",
+    "outcomeIdentityMapping": "UNRESOLVED_OD-PROTOCOL_AND_WORLD_DEPENDENCY; do not map, synthesize, or substitute UUIDs",
+    "requestShape": ["abilityId", "contractVersion", "arguments"],
+    "targetIdentity": "canonical lowercase UUID; one online target resolved by authoritative lookup",
+    "principal": "server, world, character, connection, request, invocation, requester, origin, epoch, generation, and policy are trusted envelopes only",
+    "liveRequest": "new work requires a live admitted non-expired player request and connected authenticated requester; history and private administration cannot start work",
+    "delegation": "same complete named grant must include requester and target; self-targeting still needs a grant; operator status is not authority",
+    "scope": "same server/world instance and dimension; exact Entity.getPos feet coordinates; Euclidean distance <= min(64, selected grant range); world border and grant region apply",
+    "grantEvaluation": "explicit denial first; require one complete grant; never union; choose lexicographically smallest stable ASCII grant ID before applying its ceilings",
+    "failureClosed": "missing, invalid, stale, ambiguous, or unavailable authority denies; target discovery never proves target state",
+    "result": "logical outcomes are normative metadata; wire mapping and executable result binding remain unresolved; absent evidence is null, never a success-shaped default",
+    "float32": "For result binary32 fields, accept exact raw JSON decimal values equal to either Java Float.toString(f) or ECMAScript JSON.stringify(Math.fround(f)) for the same finite binary32 f. Normalize both accepted encodings to f before comparison; preserve subnormals and Float.MAX_VALUE, reject nonzero-to-zero underflow, overflow/infinity, and any other decimal rounding or widening. Never clamp. Raw tokens are compared exactly before Number parsing. Java -0.0 preserves negative zero; JSON.stringify(-0) emits 0 and cannot preserve its sign.",
+    "presentation": "private structured results only; public narration uses a separate intentional audience-checked message channel; dispatch is not a client receipt"
+  },
+  "$defs": {
+    "observeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["abilityId", "contractVersion", "arguments"],
+      "properties": {
+        "abilityId": { "const": "worldspeaker.core.observe_player" },
+        "contractVersion": { "const": 1 },
+        "arguments": { "$ref": "#/$defs/observeArguments" }
+      }
+    },
+    "observeArguments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetPlayerId"],
+      "properties": { "targetPlayerId": { "$ref": "#/$defs/uuid" } }
+    },
+    "strikeRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["abilityId", "contractVersion", "arguments"],
+      "properties": {
+        "abilityId": { "const": "worldspeaker.core.strike_lightning" },
+        "contractVersion": { "const": 1 },
+        "arguments": { "$ref": "#/$defs/strikeArguments" }
+      }
+    },
+    "strikeArguments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetPlayerId"],
+      "properties": {
+        "targetPlayerId": { "$ref": "#/$defs/uuid" },
+        "visualOnly": { "type": "boolean", "default": true }
+      }
+    },
+    "uuid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+      "minLength": 36,
+      "maxLength": 36
+    },
+    "safeInteger": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 },
+    "nullableSafeInteger": {
+      "oneOf": [
+        { "$ref": "#/$defs/safeInteger" },
+        { "type": "null" }
+      ]
+    },
+    "resultState": {
+      "enum": ["rejected", "admitted", "submitted", "executed", "failed", "partial", "expired", "cancelled", "unknown"]
+    },
+    "reasonCode": {
+      "enum": ["none", "invalid_input", "unsupported_contract", "unsupported_state", "permission_denied", "target_unavailable", "out_of_scope", "protected_area", "stale_context", "rate_limited", "concurrency_limited", "deadline_expired", "cancelled", "storage_unavailable", "execution_unavailable", "execution_failed", "outcome_unknown"]
+    },
+    "observeFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["targetPlayerId", "observedAt", "health", "maxHealth", "dimension", "biome", "holdingItem"],
+      "properties": {
+        "targetPlayerId": { "$ref": "#/$defs/uuid" },
+        "observedAt": { "$ref": "#/$defs/safeInteger" },
+        "health": { "type": "number", "minimum": 0, "maximum": 3.4028235e38, "worldspeakerFloat32": "finite-nonnegative" },
+        "maxHealth": { "type": "number", "exclusiveMinimum": 0, "maximum": 3.4028235e38, "worldspeakerFloat32": "finite-positive" },
+        "dimension": { "$ref": "#/$defs/minecraftIdentifier" },
+        "biome": { "$ref": "#/$defs/minecraftIdentifier" },
+        "holdingItem": { "$ref": "#/$defs/minecraftIdentifier" }
+      },
+      "worldspeakerHealthAtMostMaxHealth": true
+    },
+    "minecraftIdentifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[a-z0-9_.-]+:[a-z0-9/._-]+$",
+      "worldspeakerAsciiOnly": true
+    },
+    "step": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "state"],
+      "properties": {
+        "kind": { "enum": ["presentation", "damage"] },
+        "state": { "enum": ["prevented", "confirmed", "failed", "unknown"] },
+        "healthRemoved": { "oneOf": [{ "type": "number", "minimum": 0, "maximum": 5, "worldspeakerFloat32": "finite-nonnegative" }, { "type": "null" }] },
+        "absorptionRemoved": { "oneOf": [{ "type": "number", "minimum": 0, "maximum": 5, "worldspeakerFloat32": "finite-nonnegative" }, { "type": "null" }] },
+        "damageDisposition": { "oneOf": [{ "enum": ["applied", "mitigated", "invulnerable", "protection_veto", "non_lethal_limit"] }, { "type": "null" }] }
+      },
+      "worldspeakerDamageStepFields": true
+    },
+    "lightningFacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["actionId", "targetPlayerId", "dimension", "executedAt", "coordinates", "visualOnly", "steps"],
+      "properties": {
+        "actionId": { "$ref": "#/$defs/uuid" },
+        "targetPlayerId": { "$ref": "#/$defs/uuid" },
+        "dimension": { "$ref": "#/$defs/minecraftIdentifier" },
+        "executedAt": { "$ref": "#/$defs/nullableSafeInteger" },
+        "coordinates": {
+          "description": "Null means the placement is unknown. A non-null value must be a losslessly representable Minecraft Java 1.21.1 packed BlockPos (X/Z: -33554432..33554431; Y: -2048..2047). This is structural representation validation only, not qualification against the actual dimension build height, current world border, or complete 9x9 footprint. Before authoritative outcome publication, non-null coordinates require a trusted execution-world bounds check; if that context is unavailable, coordinates must remain null.",
+          "oneOf": [
+            { "type": "array", "prefixItems": [{ "type": "integer", "minimum": -33554432, "maximum": 33554431 }, { "type": "integer", "minimum": -2048, "maximum": 2047 }, { "type": "integer", "minimum": -33554432, "maximum": 33554431 }], "items": false, "minItems": 3, "maxItems": 3, "worldspeakerMinecraft1211BlockPosRepresentation": true },
+            { "type": "null" }
+          ]
+        },
+        "visualOnly": { "type": "boolean" },
+        "steps": { "type": "array", "items": { "$ref": "#/$defs/step" }, "minItems": 1, "maxItems": 2 }
+      },
+      "worldspeakerLightningFactsSemantics": true
+    },
+    "observeResult": {
+      "allOf": [
+        { "$ref": "#/$defs/baseResult" },
+        { "type": "object", "required": ["queryId"], "properties": { "abilityId": { "const": "worldspeaker.core.observe_player" }, "queryId": { "$ref": "#/$defs/uuid" }, "facts": { "oneOf": [{ "$ref": "#/$defs/observeFacts" }, { "type": "null" }] } } }
+      ],
+      "unevaluatedProperties": false,
+      "worldspeakerOutcomeStateFacts": true
+    },
+    "lightningResult": {
+      "allOf": [
+        { "$ref": "#/$defs/baseResult" },
+        { "type": "object", "required": ["actionId"], "properties": { "abilityId": { "const": "worldspeaker.core.strike_lightning" }, "actionId": { "$ref": "#/$defs/uuid" }, "facts": { "oneOf": [{ "$ref": "#/$defs/lightningFacts" }, { "type": "null" }] } } }
+      ],
+      "unevaluatedProperties": false,
+      "worldspeakerOutcomeStateFacts": true
+    },
+    "baseResult": {
+      "type": "object",
+      "required": ["serverId", "worldId", "characterId", "requestId", "invocationId", "abilityId", "contractVersion", "policyRevision", "serverEpochId", "state", "reasonCode", "facts", "observedAt", "executedAt", "retryAfterMs"],
+      "properties": {
+        "serverId": { "$ref": "#/$defs/uuid" },
+        "worldId": { "$ref": "#/$defs/uuid" },
+        "characterId": { "$ref": "#/$defs/uuid" },
+        "requestId": { "$ref": "#/$defs/uuid" },
+        "invocationId": { "$ref": "#/$defs/uuid" },
+        "abilityId": { "type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[A-Za-z0-9._:-]+$", "worldspeakerAsciiOnly": true },
+        "contractVersion": { "const": 1 },
+        "policyRevision": { "$ref": "#/$defs/safeInteger" },
+        "serverEpochId": { "$ref": "#/$defs/uuid" },
+        "state": { "$ref": "#/$defs/resultState" },
+        "reasonCode": { "$ref": "#/$defs/reasonCode" },
+        "facts": {},
+        "observedAt": { "$ref": "#/$defs/nullableSafeInteger" },
+        "executedAt": { "$ref": "#/$defs/nullableSafeInteger" },
+        "retryAfterMs": { "oneOf": [{ "type": "integer", "minimum": 0, "maximum": 30000 }, { "type": "null" }] }
+      }
+    }
+  },
+  "contracts": [
+    {
+      "abilityId": "worldspeaker.core.observe_player",
+      "contractVersion": 1,
+      "kind": "query",
+      "purpose": "Inspect grant-authorized physical status and local biome of one active player; read-only does not imply public information.",
+      "inputSchema": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/observeRequest" },
+      "resultSchema": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/observeResult" },
+      "permission": {
+        "node": "worldspeaker.ability.observe_player",
+        "default": "deny",
+        "requester": "grant requesterIds must include the authenticated requester",
+        "target": "self by default; another UUID must be listed in otherTargetIds on that same complete grant",
+        "denialPrecedence": "explicit denial blocks all grants",
+        "provider": "no provider selected or qualified; provider failure denies"
+      },
+      "bounds": {
+        "targetCount": 1,
+        "rangeBlocks": 64,
+        "grantRangeBlocks": [0, 64],
+        "inFlightPerRequester": 1,
+        "inFlightPerCharacter": 16,
+        "snapshotsPerRequesterPer2000Ms": 1,
+        "snapshotsPerCharacterPerSecond": 4,
+        "readDeadlineAfterAdmissionMs": 1000,
+        "snapshotMaxAgeAtDeliveryMs": 2000,
+        "resultUtf8Bytes": 4096,
+        "reads": ["one authoritative target lookup", "fixed health/max-health/dimension/biome/held-item reads"],
+        "prohibitedWork": ["chunk load", "entity scan", "world scan", "inventory iteration", "item NBT", "arbitrary lists"]
+      },
+      "preconditions": {
+        "request": "live, admitted, non-expired, requester connected; current policy rechecked",
+        "target": "online, alive, non-spectating, same server/world/dimension, in ticking loaded chunk",
+        "scope": "exact feet-position Euclidean distance <= min(64, selected grant range), grant scope and world border",
+        "freshness": "read by acceptance+1000ms; deliver only at age <=2000ms while still authorized; death, departure, world/dimension change invalidate",
+        "revalidation": "recheck authority, request, requester/target eligibility and scope before read and before delivery"
+      },
+      "execution": {
+        "implementationStatus": "UNIMPLEMENTED",
+        "qualificationStatus": "UNQUALIFIED",
+        "availability": "UNAVAILABLE",
+        "futureThread": "one bounded tick-thread snapshot, no network or persistence wait",
+        "accounting": "reserve slot and rate atomically; charge when reading starts including read failure; release pre-read cancellation/rejection",
+        "timeouts": "expired queued task rechecks deadline and cannot read later",
+        "restart": "if rate state cannot be recovered, wait 2000ms after restart"
+      },
+      "reliability": {
+        "identity": "query UUID binds immutable target and trusted context before submission",
+        "duplicate": "fresh identical retry returns authorized cached snapshot without read or charge; conflicting intent rejects",
+        "expiry": "at age >2000ms return expired; cache loss or epoch change expires; never uncharged reread",
+        "retention": "retain identity metadata for request lifetime; metadata loss invalidates outstanding request context",
+        "effectJournal": "not consequential; no action ledger"
+      },
+      "privacy": {
+        "excluded": ["coordinates", "inventory", "counts", "NBT", "private configuration", "credentials", "unrelated player data"],
+        "routineLogs": "no chat bodies, full inventory, item NBT, secrets, or precise coordinates",
+        "snapshotRetention": "not retained as conversational/audit body by default",
+        "resultAudience": "associated agent private result; current access required for cached-result delivery"
+      },
+      "presentation": {
+        "publicNarration": "none automatically; any narration is a separate intentional player-audience-checked message",
+        "receipt": "server result delivery does not prove player receipt"
+      }
+    },
+    {
+      "abilityId": "worldspeaker.core.strike_lightning",
+      "contractVersion": 1,
+      "kind": "effect",
+      "purpose": "Present one controlled lightning strike at a deterministically resolved player location, optionally applying narrowly granted non-lethal damage; never unrestricted vanilla lightning.",
+      "inputSchema": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/strikeRequest" },
+      "resultSchema": { "$ref": "https://worldspeaker.invalid/schema/ability-contracts-v1.json#/$defs/lightningResult" },
+      "permission": {
+        "node": "worldspeaker.ability.strike_lightning",
+        "default": "deny",
+        "visualGrant": "complete grant must set allowVisual:true",
+        "damageGrant": "visualOnly:false additionally requires allowDamage:true and finite maxDamage in (0,5] on that same complete grant; otherwise deny, never silently downgrade",
+        "requester": "grant requesterIds must include the authenticated requester",
+        "target": "self by default; another UUID must be listed in otherTargetIds on that same complete grant",
+        "denialPrecedence": "explicit denial blocks all grants; operators do not bypass",
+        "provider": "no provider selected or qualified; provider failure denies"
+      },
+      "bounds": {
+        "oneEffectPerInvocation": true,
+        "requestAgeMaxMs": 15000,
+        "actionAdmissionAgeMaxMs": 5000,
+        "presentationCount": 1,
+        "presentationLifetimeMaxMs": 1000,
+        "damageAttemptsMax": 1,
+        "damageMaxHealthPoints": 5,
+        "attemptedDamage": "min(grant.maxDamage, 5, max(0, target.getHealth()-1)); base red health only, absorption excluded",
+        "footprintColumns": 81,
+        "footprintSideBlocks": 9,
+        "footprintChunksMax": 4,
+        "cooldownRequesterMs": 30000,
+        "cooldownTargetMs": 30000,
+        "effectsPerCharacterPerSecond": 1,
+        "inFlightPerCharacter": 1,
+        "audioRangeBlocks": 32,
+        "audioVolumeMax": 1,
+        "audioRecipientsMax": 32,
+        "stepsMax": 2,
+        "resultUtf8Bytes": 4096,
+        "prohibitedMutations": ["fire", "burning", "knockback", "bystander/mob/item damage", "transformations", "explosions", "copper changes", "lightning-rod/redstone activation", "weather changes", "other gameplay mutations", "global thunder broadcast"]
+      },
+      "preconditions": {
+        "request": "live, admitted, non-expired, requester connected; originating invocation age <=15000ms",
+        "target": "online, alive, non-spectating, in ticking loaded chunk; same server/world/dimension; exact feet-position distance <= min(64, grant range)",
+        "placement": "admission resolves target feet block [x,y,z], impact origin [x+0.5,y,z+0.5]; no random offset, search, rod redirect, model position, or chunk load; movement to another feet block/dimension rejects stale",
+        "footprint": "all x-4..x+4 and z-4..z+4 columns over build height; inside border and grant region; loaded; full footprint and target authorized",
+        "protection": "vanilla spawn protection and configured regions apply without operator exemption; REQUIRED needs qualified claims adapters; NONE must be explicitly configured; unavailable/indeterminate protection denies",
+        "sky": "current loaded server state confirms impact column sky access",
+        "freshness": "first admission age <=5000ms; original invocation age <=15000ms; retries renew neither; recheck all material state immediately before operation"
+      },
+      "execution": {
+        "implementationStatus": "UNIMPLEMENTED",
+        "qualificationStatus": "UNQUALIFIED",
+        "availability": "UNAVAILABLE",
+        "futureThread": "prepare immutable intent durably off-thread, then one bounded Fabric server-thread task; no tick-thread network/storage wait",
+        "reservation": "atomically reserve invocation eligibility, requester/target cooldowns, in-flight capacity; commit before first operation",
+        "steps": ["presentation", "optional damage attempt"],
+        "nonlethal": "suppress reflection/amplification or measure mitigation and abort before damage if remaining base health <1.0; respect mitigation, absorption, invulnerability and protection vetoes",
+        "nativeBehavior": "cosmetic flag alone is insufficient; prove fire/secondary behavior suppression; if either mode cannot enforce constraints it remains unavailable",
+        "protectionExternalClaimsMode": ["REQUIRED", "NONE"]
+      },
+      "reliability": {
+        "identity": "action UUID scoped server/world/character; immutable request/requester/target/mode/server-resolved placement",
+        "duplicates": "lookup existing identity before deriving placement; identical duplicate returns known state; conflicting intent rejects; never spawn again for lost receipt",
+        "durability": "durably prepare before scheduling and persist known facts asynchronously; unavailable required store prevents effect",
+        "preOperation": "definite rejection/expiry/cancellation before any operation releases reservations",
+        "postOperation": "retain charge and invocation consumption after any operation may have occurred; no refund or automatic retry",
+        "unknown": "block conflicting requester/target work until reconciled; preserve unknown, never blind retry/compensate/claim success",
+        "restart": "cooldowns survive restart; if remaining time unknown retain full interval",
+        "retention": "no automatic deletion of consequential evidence; finite storage ceiling stops new effects rather than discarding records"
+      },
+      "privacy": {
+        "privateEvidence": ["identity", "policy revision", "timing", "immutable intent", "reservation/accounting metadata", "known per-step outcomes"],
+        "routineLogs": "no chat bodies, credentials, private routing, or precise coordinates; reconciliation coordinates remain private",
+        "resultAudience": "associated agent private result; authorized current access required for outcome lookup"
+      },
+      "presentation": {
+        "publicNarration": "no automatic raw result or command feedback; any narration is a separate intentional lifecycle-checked message",
+        "audio": "optional; at most one sound per authorized recipient within 32 blocks, volume <=1, <=32 recipients; no global thunder",
+        "receipt": "server dispatch is not a client receipt"
+      }
+    }
+  ]
+}
