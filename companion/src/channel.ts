@@ -31,8 +31,63 @@ import {
 
 const CHANNEL_ID = 'worldspeaker';
 const transports = new Map<string, WorldspeakerTransport>();
+type AccountLifetime = {
+  accountId: string;
+  signal: AbortSignal;
+  transport: WorldspeakerTransport | undefined;
+  stopping: boolean;
+  untilStopped: Promise<void>;
+  requestStop: () => void;
+  finished: Promise<void>;
+  complete: () => void;
+  fail: (error: unknown) => void;
+};
+const accountLifetimes = new Map<string, AccountLifetime>();
+// Start and stop receive distinct context wrappers, but share this exact host signal.
+const accountLifetimesBySignal = new WeakMap<AbortSignal, AccountLifetime>();
 // Kept outside transport instances so account stop/start cannot refill unsettled host work.
 const accountWorkBudget = new HostWorkBudget(16, 16);
+
+function beginAccountLifetime(accountId: string, signal: AbortSignal): AccountLifetime {
+  if (accountLifetimes.has(accountId)) throw new Error('WS-COMPAT-ACCOUNT-ALREADY-RUNNING');
+  if (accountLifetimesBySignal.has(signal)) throw new Error('WS-COMPAT-ACCOUNT-LIFETIME-REUSED');
+  let stopped!: () => void;
+  let complete!: () => void;
+  let fail!: (error: unknown) => void;
+  const untilStopped = new Promise<void>((resolve) => { stopped = resolve; });
+  const finished = new Promise<void>((resolve, reject) => { complete = resolve; fail = reject; });
+  // Cleanup errors still reject startAccount and every stop waiter, without an unobserved bookkeeping rejection.
+  void finished.catch(() => {});
+  const lifetime: AccountLifetime = {
+    accountId, signal, transport: undefined, stopping: false, untilStopped, finished, complete, fail,
+    requestStop: () => {
+      lifetime.stopping = true;
+      if (lifetime.transport && transports.get(accountId) === lifetime.transport) transports.delete(accountId);
+      stopped();
+    },
+  };
+  accountLifetimes.set(accountId, lifetime);
+  accountLifetimesBySignal.set(signal, lifetime);
+  signal.addEventListener('abort', lifetime.requestStop, { once: true });
+  if (signal.aborted) lifetime.requestStop();
+  return lifetime;
+}
+
+async function finishAccountLifetime(lifetime: AccountLifetime): Promise<void> {
+  lifetime.requestStop();
+  try {
+    // Only the start task owns cleanup. A stop during startup waits for startup to settle first.
+    await lifetime.transport?.close();
+    if (accountLifetimes.get(lifetime.accountId) === lifetime) accountLifetimes.delete(lifetime.accountId);
+    lifetime.complete();
+  } catch (error) {
+    // Retain the account reservation if resource cleanup is uncertain. Do not reopen a second listener.
+    lifetime.fail(error);
+    throw error;
+  } finally {
+    lifetime.signal.removeEventListener('abort', lifetime.requestStop);
+  }
+}
 
 type AccountReference = Readonly<{ accountId: 'default'; enabled: boolean; configFile: string }>;
 type ResolvedAccount = TransportConfig & Readonly<{ accountId: 'default'; configFile: string }>;
@@ -484,81 +539,93 @@ const channelBase: ChannelPlugin<AccountReference, unknown, unknown, 2> = {
       const reference = ctx.account;
       const resolution = assertAccountReferenceCoherent(ctx.cfg, reference);
       if (!reference.enabled) throw new Error('Worldspeaker channel is disabled');
-      const loaded = await loadStartupConfig(reference.configFile);
-      // Recheck mutable host/account state after asynchronous file I/O and before any listener exists.
-      const currentResolution = assertAccountReferenceCoherent(ctx.cfg, reference);
-      if (currentResolution !== resolution) throw new Error('Worldspeaker account configuration changed during startup');
-      const account: ResolvedAccount = Object.freeze({
-        enabled: reference.enabled,
-        bindHost: loaded.companion.bindHost,
-        port: loaded.companion.port,
-        serverEndpoint: stringField(loaded.server, 'endpoint'),
-        bearerSecret: loaded.bearerSecret,
-        deploymentId: loaded.companion.deploymentId,
-        manifestSha256: loaded.companion.manifestSha256,
-        configurationHandshakeVersion: 1,
-        configSetSha256: loaded.configSetSha256,
-        abilityPolicy: loaded.abilityPolicy,
-        binding: loaded.binding,
-        accountId: 'default',
-        configFile: loaded.configFile,
-      });
-      const hostConfigSnapshot = resolution.configSnapshot;
-      assertConfiguredAgent(hostConfigSnapshot, account.binding.agentId);
-      assertNoWorldspeakerRouteOverride(hostConfigSnapshot);
-      loadedAccountResolutions.set(account, Object.freeze({
-        configSnapshot: hostConfigSnapshot,
-        configFile: loaded.configFile,
-        configSetSha256: loaded.configSetSha256,
-        binding: loaded.binding,
-      }));
-      const runtimeSurface = ctx.channelRuntime;
-      if (!runtimeSurface) throw new Error('WS-COMPAT-HOST-CONTEXT-UNAVAILABLE');
-      const runtime = runtimeSurface as unknown as ChannelRuntime;
-      const updateAcknowledgementContext = acknowledgementContextUpdater;
-      if (!updateAcknowledgementContext) throw new Error('WS-COMPAT-ACK-CONTEXT-API-UNAVAILABLE');
-      const [hostVersion, companionVersion] = await Promise.all([installedOpenClawVersion(), installedCompanionVersion()]);
-      if (hostVersion !== DEPLOYMENT.hostVersion || companionVersion !== DEPLOYMENT.companionVersion ||
-          process.versions.node !== DEPLOYMENT.nodeVersion) throw new Error('WS-COMPAT-HOST-VERSION-MISMATCH');
+      if (!(ctx.abortSignal instanceof AbortSignal)) throw new Error('WS-COMPAT-ACCOUNT-ABORT-SIGNAL-MISSING');
+      if (ctx.abortSignal.aborted) return;
+      const lifetime = beginAccountLifetime(reference.accountId, ctx.abortSignal);
+      try {
+        const loaded = await loadStartupConfig(reference.configFile);
+        if (lifetime.stopping) return;
+        // Recheck mutable host/account state after asynchronous file I/O and before any listener exists.
+        const currentResolution = assertAccountReferenceCoherent(ctx.cfg, reference);
+        if (currentResolution !== resolution) throw new Error('Worldspeaker account configuration changed during startup');
+        const account: ResolvedAccount = Object.freeze({
+          enabled: reference.enabled,
+          bindHost: loaded.companion.bindHost,
+          port: loaded.companion.port,
+          serverEndpoint: stringField(loaded.server, 'endpoint'),
+          bearerSecret: loaded.bearerSecret,
+          deploymentId: loaded.companion.deploymentId,
+          manifestSha256: loaded.companion.manifestSha256,
+          configurationHandshakeVersion: 1,
+          configSetSha256: loaded.configSetSha256,
+          abilityPolicy: loaded.abilityPolicy,
+          binding: loaded.binding,
+          accountId: 'default',
+          configFile: loaded.configFile,
+        });
+        const hostConfigSnapshot = resolution.configSnapshot;
+        assertConfiguredAgent(hostConfigSnapshot, account.binding.agentId);
+        assertNoWorldspeakerRouteOverride(hostConfigSnapshot);
+        loadedAccountResolutions.set(account, Object.freeze({
+          configSnapshot: hostConfigSnapshot,
+          configFile: loaded.configFile,
+          configSetSha256: loaded.configSetSha256,
+          binding: loaded.binding,
+        }));
+        const runtimeSurface = ctx.channelRuntime;
+        if (!runtimeSurface) throw new Error('WS-COMPAT-HOST-CONTEXT-UNAVAILABLE');
+        const runtime = runtimeSurface as unknown as ChannelRuntime;
+        const updateAcknowledgementContext = acknowledgementContextUpdater;
+        if (!updateAcknowledgementContext) throw new Error('WS-COMPAT-ACK-CONTEXT-API-UNAVAILABLE');
+        const [hostVersion, companionVersion] = await Promise.all([installedOpenClawVersion(), installedCompanionVersion()]);
+        if (lifetime.stopping) return;
+        if (hostVersion !== DEPLOYMENT.hostVersion || companionVersion !== DEPLOYMENT.companionVersion ||
+            process.versions.node !== DEPLOYMENT.nodeVersion) throw new Error('WS-COMPAT-HOST-VERSION-MISMATCH');
 
-      const transportConfig: TransportConfig = {
-        enabled: account.enabled,
-        bindHost: account.bindHost,
-        port: account.port,
-        serverEndpoint: account.serverEndpoint,
-        bearerSecret: account.bearerSecret,
-        deploymentId: account.deploymentId,
-        manifestSha256: account.manifestSha256,
-        configurationHandshakeVersion: account.configurationHandshakeVersion,
-        configSetSha256: account.configSetSha256,
-        ...(account.abilityPolicy === undefined ? {} : { abilityPolicy: account.abilityPolicy }),
-        binding: account.binding,
-      };
-      const transport = new WorldspeakerTransport(
-        transportConfig,
-        hostVersion,
-        companionVersion,
-         (request, sendFinal, isLive, abilityDiscovery, abilityContext) => handlePlayerRequest(
-           hostConfigSnapshot, account, runtime, request, sendFinal, isLive, updateAcknowledgementContext,
-           undefined, abilityDiscovery, abilityContext),
+        const transportConfig: TransportConfig = {
+          enabled: account.enabled,
+          bindHost: account.bindHost,
+          port: account.port,
+          serverEndpoint: account.serverEndpoint,
+          bearerSecret: account.bearerSecret,
+          deploymentId: account.deploymentId,
+          manifestSha256: account.manifestSha256,
+          configurationHandshakeVersion: account.configurationHandshakeVersion,
+          configSetSha256: account.configSetSha256,
+          ...(account.abilityPolicy === undefined ? {} : { abilityPolicy: account.abilityPolicy }),
+          binding: account.binding,
+        };
+        const transport = new WorldspeakerTransport(
+          transportConfig,
+          hostVersion,
+          companionVersion,
+          (request, sendFinal, isLive, abilityDiscovery, abilityContext) => handlePlayerRequest(
+            hostConfigSnapshot, account, runtime, request, sendFinal, isLive, updateAcknowledgementContext,
+            undefined, abilityDiscovery, abilityContext),
           (request, context) => 'phase' in context
             ? handlePlayerProgress(hostConfigSnapshot, account, runtime, request, context, updateAcknowledgementContext)
             : handlePlayerAcknowledgement(hostConfigSnapshot, account, runtime, request, context, updateAcknowledgementContext),
-        (status, reason) => {
-          if (status === 'unavailable') ctx.log?.warn?.(`${reason}: Worldspeaker admission closed.`);
-          else if (status === 'ready') ctx.log?.info?.('WS-COMPAT-READY: authenticated Worldspeaker peer established.');
-        },
-        undefined,
-        accountWorkBudget,
-      );
-      await transport.start();
-      transports.set(account.accountId, transport);
+          (status, reason) => {
+            if (status === 'unavailable') ctx.log?.warn?.(`${reason}: Worldspeaker admission closed.`);
+            else if (status === 'ready') ctx.log?.info?.('WS-COMPAT-READY: authenticated Worldspeaker peer established.');
+          },
+          undefined,
+          accountWorkBudget,
+        );
+        lifetime.transport = transport;
+        await transport.start();
+        if (lifetime.stopping) return;
+        transports.set(account.accountId, transport);
+        await lifetime.untilStopped;
+      } finally {
+        await finishAccountLifetime(lifetime);
+      }
     },
     stopAccount: async (ctx) => {
-      const transport = transports.get(ctx.accountId);
-      if (!transport) return;
-      transports.delete(ctx.accountId);
-      await transport.close();
+      const lifetime = ctx.abortSignal instanceof AbortSignal ? accountLifetimesBySignal.get(ctx.abortSignal) : undefined;
+      if (!lifetime || lifetime.accountId !== ctx.accountId) return;
+      lifetime.requestStop();
+      await lifetime.finished;
     },
   },
 };

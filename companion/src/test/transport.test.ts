@@ -40,6 +40,36 @@ test('direct transport construction rejects unsafe endpoint and credential value
   assert.throws(() => construct({ ...config, bearerSecret: 'short' }), /secret/u);
 });
 
+test('concurrent transport close calls share completion and a closed transport cannot restart', async () => {
+  const port = await availablePort();
+  const transport = new WorldspeakerTransport({
+    enabled: true, bindHost: '127.0.0.1', port, serverEndpoint: `ws://127.0.0.1:${port}`,
+    bearerSecret: randomBytes(32).toString('base64url'), deploymentId: DEPLOYMENT.deploymentId,
+    manifestSha256: DEPLOYMENT.manifestSha256, configurationHandshakeVersion: 1,
+    configSetSha256: 'a'.repeat(64), binding,
+  }, DEPLOYMENT.hostVersion, DEPLOYMENT.companionVersion, async () => {}, async () => {}, () => {});
+  try {
+    await transport.start();
+    const first = transport.close();
+    const second = transport.close();
+    try {
+      assert.strictEqual(first, second, 'every close caller must await the actual shared socket shutdown');
+    } finally {
+      await Promise.all([first, second]);
+    }
+    assert.strictEqual(transport.close(), first);
+    await assert.rejects(transport.start(), /stopped/u);
+    const probe = createServer();
+    await new Promise<void>((resolve, reject) => {
+      probe.once('error', reject);
+      probe.listen(port, '127.0.0.1', resolve);
+    });
+    await new Promise<void>((resolve, reject) => probe.close((error) => error ? reject(error) : resolve()));
+  } finally {
+    await transport.close();
+  }
+});
+
 test('one bound socket completes nonce/HMAC handshake, heartbeat, and addressed final delivery', async () => {
   const port = await availablePort();
   const secret = randomBytes(32).toString('base64url');

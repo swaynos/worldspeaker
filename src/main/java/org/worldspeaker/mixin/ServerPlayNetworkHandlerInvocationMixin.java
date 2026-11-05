@@ -12,7 +12,8 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.worldspeaker.bootstrap.InvocationCapture;
@@ -71,20 +72,20 @@ public abstract class ServerPlayNetworkHandlerInvocationMixin implements ServerC
         }
     }
 
-    @ModifyArg(method = "onCommandExecution",
+    @ModifyArgs(method = "onCommandExecution",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;validateMessage(Ljava/lang/String;Ljava/lang/Runnable;)V"),
-            index = 1)
-    private Runnable worldspeaker$bindUnsignedCommandReceipt(Runnable task, CommandExecutionC2SPacket packet) {
+            require = 1, allow = 1)
+    private void worldspeaker$bindUnsignedCommandReceipt(Args arguments, CommandExecutionC2SPacket packet) {
         InvocationCapture capture = ((PacketCaptureAccess) (Object) packet).worldspeaker$getInvocationCapture();
-        return InvocationCaptureContext.bind(capture, task);
+        arguments.set(1, InvocationCaptureContext.bind(capture, arguments.<Runnable>get(1)));
     }
 
-    @ModifyArg(method = "onChatCommandSigned",
+    @ModifyArgs(method = "onChatCommandSigned",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;validateMessage(Ljava/lang/String;Ljava/lang/Runnable;)V"),
-            index = 1)
-    private Runnable worldspeaker$bindSignedCommandReceipt(Runnable task, ChatCommandSignedC2SPacket packet) {
+            require = 1, allow = 1)
+    private void worldspeaker$bindSignedCommandReceipt(Args arguments, ChatCommandSignedC2SPacket packet) {
         InvocationCapture capture = ((PacketCaptureAccess) (Object) packet).worldspeaker$getInvocationCapture();
-        return InvocationCaptureContext.bind(capture, task);
+        arguments.set(1, InvocationCaptureContext.bind(capture, arguments.<Runnable>get(1)));
     }
 
     @Unique private static long worldspeaker$nextConnectionGeneration() {

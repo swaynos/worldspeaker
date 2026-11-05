@@ -6,6 +6,9 @@ agents behind the scenes—no client installation required.
 
 ## Status
 
+For the current development handoff, see [next iteration](docs/NEXT-ITERATION.md).
+It records the ABIL-04 resume point, remaining verification and activation blockers.
+
 **COMPAT-01 foundation implemented; candidate unqualified.** The selected
 candidate is Minecraft Java **1.21.1**, Fabric Loader **0.20.1**, Fabric API
 **0.116.17+1.21.1**, Temurin **21.0.13+9-LTS** on Linux x86-64, OpenClaw

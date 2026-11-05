@@ -35,7 +35,8 @@ const ALLOWED_MIXIN_API_CLASSES = new Set([
   'org/spongepowered/asm/mixin/gen/Accessor',
   'org/spongepowered/asm/mixin/injection/At',
   'org/spongepowered/asm/mixin/injection/Inject',
-  'org/spongepowered/asm/mixin/injection/ModifyArg',
+  'org/spongepowered/asm/mixin/injection/ModifyArgs',
+  'org/spongepowered/asm/mixin/injection/invoke/arg/Args',
   'org/spongepowered/asm/mixin/injection/callback/CallbackInfo',
   'org/spongepowered/asm/mixin/injection/callback/CallbackInfoReturnable',
 ]);
@@ -419,6 +420,9 @@ export function verifyJar(jarPath) {
       reject('client-class', `entry=${name}`);
     }
     const parsed = parseClassFile(classBytes, name);
+    if (name === 'org/worldspeaker/mixin/ServerPlayNetworkHandlerInvocationMixin.class') {
+      inspectCommandCaptureHandlers(parsed, name);
+    }
     if (name === SERVER_OUTPUT_MIXIN_ENTRY) inspectServerOutputAccessorClass(parsed, name);
     else if (REVIEWED_MIXIN_ENTRIES.includes(name) && !parsed.constants.includes('Lorg/spongepowered/asm/mixin/Mixin;')) {
       reject('mixin-class-annotation-missing', `entry=${name}; expected @Mixin`);
@@ -777,8 +781,11 @@ function inspectApiReferences(refs) {
   for (const { name, entry } of refs.classReferences) {
     if (name.startsWith('org/spongepowered/asm/mixin/')) {
       const accessorOnly = name === 'org/spongepowered/asm/mixin/gen/Accessor';
+      const commandCaptureOnly = name === 'org/spongepowered/asm/mixin/injection/ModifyArgs' ||
+        name === 'org/spongepowered/asm/mixin/injection/invoke/arg/Args';
       if (!REVIEWED_MIXIN_ENTRIES.includes(entry) || !ALLOWED_MIXIN_API_CLASSES.has(name) ||
-          accessorOnly && entry !== SERVER_OUTPUT_MIXIN_ENTRY) {
+          accessorOnly && entry !== SERVER_OUTPUT_MIXIN_ENTRY ||
+          commandCaptureOnly && entry !== 'org/worldspeaker/mixin/ServerPlayNetworkHandlerInvocationMixin.class') {
         reject('mixin-api-reference', `entry=${entry}; reference=${name}`);
       }
       continue;
@@ -788,6 +795,24 @@ function inspectApiReferences(refs) {
     const forbidden = classifyForbiddenClass(mappedName);
     if (forbidden) reject(forbidden, `reference=${name}; mapped=${mappedName}`);
     if (isGameApi(name) && !isAllowedClass(name)) reject('unknown-game-api-reference', `reference=${name}`);
+  }
+}
+
+function inspectCommandCaptureHandlers(parsed, entry) {
+  const handlers = [
+    ['worldspeaker$bindUnsignedCommandReceipt', 'CommandExecutionC2SPacket'],
+    ['worldspeaker$bindSignedCommandReceipt', 'ChatCommandSignedC2SPacket'],
+  ];
+  for (const [name, packet] of handlers) {
+    const methods = parsed.methods.filter((method) => method.name === name);
+    const descriptor = '(Lorg/spongepowered/asm/mixin/injection/invoke/arg/Args;' +
+      `Lnet/minecraft/network/packet/c2s/play/${packet};)V`;
+    if (methods.length !== 1 || methods[0].access !== 0x0002 ||
+        mapDescriptorClasses(methods[0].descriptor) !== descriptor ||
+        !parsed.constants.includes('Lorg/spongepowered/asm/mixin/injection/ModifyArgs;') ||
+        parsed.constants.includes('Lorg/spongepowered/asm/mixin/injection/ModifyArg;')) {
+      reject('command-capture-mixin-bytecode-invalid', `entry=${entry}; handler=${name}; expected enclosing packet capture with @ModifyArgs`);
+    }
   }
 }
 

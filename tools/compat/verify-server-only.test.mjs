@@ -87,6 +87,37 @@ test('compiled remapped JAR passes bounded ZIP, metadata, and mapped-symbol insp
     'the optional load harness must remain outside the production JAR');
 });
 
+test('command receipt handlers capture enclosing packets with void ModifyArgs signatures', () => {
+  const entries = validEntries();
+  const entry = 'org/worldspeaker/mixin/ServerPlayNetworkHandlerInvocationMixin.class';
+  const bytes = entries.get(entry);
+  const parsed = parseClassFile(bytes, entry);
+  assert.ok(parsed.constants.includes('Lorg/spongepowered/asm/mixin/injection/ModifyArgs;'));
+  assert.equal(parsed.constants.includes('Lorg/spongepowered/asm/mixin/injection/ModifyArg;'), false);
+  assert.doesNotThrow(() => verifyFixtureEntries(entries));
+
+  for (const name of ['worldspeaker$bindUnsignedCommandReceipt', 'worldspeaker$bindSignedCommandReceipt']) {
+    const method = parsed.methods.find((candidate) => candidate.name === name);
+    assert.ok(method, `missing ${name}`);
+    assert.equal(method.access, 0x0002);
+    assert.match(method.descriptor, /^\(Lorg\/spongepowered\/asm\/mixin\/injection\/invoke\/arg\/Args;Lnet\/minecraft\/class_\d+;\)V$/);
+    const brokenDescriptor = method.descriptor.replace(
+      'Lorg/spongepowered/asm/mixin/injection/invoke/arg/Args;', 'Ljava/lang/Runnable;'
+    ).replace(/V$/, 'Ljava/lang/Runnable;');
+    const constant = classUtf8Constants(bytes).find(({ bytes: value }) => value.toString('utf8') === method.descriptor);
+    assert.ok(constant, 'handler descriptor must be present in the constant pool');
+    const replacement = Buffer.from(brokenDescriptor, 'utf8');
+    const length = Buffer.alloc(2);
+    length.writeUInt16BE(replacement.length);
+    const mutated = new Map(entries);
+    mutated.set(entry, Buffer.concat([
+      bytes.subarray(0, constant.offset - 2), length, replacement,
+      bytes.subarray(constant.offset + constant.bytes.length),
+    ]));
+    assertRejected(mutated, 'command-capture-mixin-bytecode-invalid', name);
+  }
+});
+
 test('production JAR pins the bounded private-file helper bytes', () => {
   const entries = validEntries();
   const helper = entries.get('org/worldspeaker/compat/private-file-reader.mjs');

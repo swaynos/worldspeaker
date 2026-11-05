@@ -6,6 +6,7 @@ import { createServer, type AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import test from 'node:test';
+import { setImmediate as nextTurn } from 'node:timers/promises';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import type { OpenClawConfig } from 'openclaw/plugin-sdk/channel-core';
 import { buildChannelInboundEventContext, type BuildChannelInboundEventContextParams } from 'openclaw/plugin-sdk/channel-inbound';
@@ -75,6 +76,7 @@ test('configured persona in the startup bundle stays fail-closed before credenti
   const resolved = worldspeakerChannel.config.resolveAccount(configured);
   const statuses: string[] = [];
   await assert.rejects(worldspeakerChannel.gateway!.startAccount!({
+    abortSignal: new AbortController().signal,
     account: resolved,
     cfg: configured,
     channelRuntime: runtimeSeam(),
@@ -138,25 +140,183 @@ test('resolver provenance rejects copied, stale, and changed channel snapshots b
   await rm(fixture.directory, { recursive: true, force: true });
 });
 
-test('a valid startup bundle starts a listener from one captured immutable configuration', async () => {
-  setAcknowledgementContextUpdater(async () => {});
-  const fixture = await writeStartupFixture({ port: await unusedLoopbackPort() });
-  const cfg = openclawConfig({ configFile: fixture.configFile });
-  const resolved = worldspeakerChannel.config.resolveAccount(cfg);
-  const statuses: string[] = [];
-  await worldspeakerChannel.gateway!.startAccount!({
-    account: resolved,
-    cfg,
-    channelRuntime: runtimeSeam(),
-    log: { info: (message: string) => statuses.push(message), warn: (message: string) => statuses.push(message) },
-  } as never);
+test('a valid account keeps its task pending until abort and releases its listener', { timeout: 5_000 }, async () => {
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  const run = startTestAccount(fixture.configFile);
   try {
-    assert.ok(statuses.some((message) => message.includes('WS-COMPAT-COMPANION-WAITING-FOR-PEER')),
-      'the validated no-persona listener reaches its prior waiting state');
-    assert.equal(statuses.some((message) => message.includes('WS-COMPAT-READY')), false,
-      'no unauthenticated peer is reported ready');
+    await waitForTestAccount(run);
+    await assertTaskPending(run.task);
+    assert.equal(run.statuses.some((message) => message.includes('WS-COMPAT-READY')), false);
+    await assert.rejects(assertLoopbackPortAvailable(port), { code: 'EADDRINUSE' });
   } finally {
+    await stopTestAccount(run);
+    await assertLoopbackPortAvailable(port);
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test('concurrent abort and stop from distinct context wrappers share one transport cleanup', { timeout: 5_000 }, async (t) => {
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  const originalClose = WorldspeakerTransport.prototype.close;
+  let closes = 0;
+  t.mock.method(WorldspeakerTransport.prototype, 'close', function (this: WorldspeakerTransport) {
+    closes++;
+    return originalClose.call(this);
+  });
+  const run = startTestAccount(fixture.configFile);
+  try {
+    await waitForTestAccount(run);
+    run.controller.abort();
+    await Promise.all([run.task, worldspeakerChannel.gateway!.stopAccount!({ ...run.context } as never)]);
+    assert.equal(closes, 1);
+    await assertLoopbackPortAvailable(port);
+  } finally {
+    await stopTestAccount(run);
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test('a pre-aborted account does not read configuration or open a listener', { timeout: 5_000 }, async () => {
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  await rm(fixture.credentialFile);
+  const controller = new AbortController();
+  controller.abort();
+  const run = startTestAccount(fixture.configFile, controller);
+  try {
+    await run.task;
+    assert.deepEqual(run.statuses, []);
+    await assertLoopbackPortAvailable(port);
+  } finally {
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test('abort during listener startup waits for that start before closing its exact transport', { timeout: 5_000 }, async (t) => {
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  const bound = deferred();
+  const release = deferred();
+  const originalStart = WorldspeakerTransport.prototype.start;
+  t.mock.method(WorldspeakerTransport.prototype, 'start', async function (this: WorldspeakerTransport) {
+    await originalStart.call(this);
+    bound.resolve();
+    await release.promise;
+  });
+  const run = startTestAccount(fixture.configFile);
+  try {
+    await Promise.race([bound.promise, run.task.then(() => assert.fail('account ended before binding'))]);
+    run.controller.abort();
+    const stopped = Promise.resolve(worldspeakerChannel.gateway!.stopAccount!({ ...run.context } as never));
+    await assertTaskPending(stopped);
+    release.resolve();
+    await Promise.all([run.task, stopped]);
+    await assertLoopbackPortAvailable(port);
+  } finally {
+    release.resolve();
+    await stopTestAccount(run);
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test('stop without abort settles the account and an old stop cannot close its replacement', { timeout: 5_000 }, async () => {
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  const first = startTestAccount(fixture.configFile);
+  let second: ReturnType<typeof startTestAccount> | undefined;
+  try {
+    await waitForTestAccount(first);
+    await worldspeakerChannel.gateway!.stopAccount!({ ...first.context } as never);
+    await first.task;
+    assert.equal(first.controller.signal.aborted, false);
+    await assertLoopbackPortAvailable(port);
+    second = startTestAccount(fixture.configFile);
+    await waitForTestAccount(second);
+    await worldspeakerChannel.gateway!.stopAccount!({ ...first.context } as never);
     await worldspeakerChannel.gateway!.stopAccount!({ accountId: 'default' } as never);
+    await assertTaskPending(second.task);
+    await assert.rejects(assertLoopbackPortAvailable(port), { code: 'EADDRINUSE' });
+  } finally {
+    if (second) await stopTestAccount(second);
+    await stopTestAccount(first);
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test('a duplicate active start is refused without replacing the account owner', { timeout: 5_000 }, async () => {
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  const first = startTestAccount(fixture.configFile);
+  try {
+    await waitForTestAccount(first);
+    const duplicate = startTestAccount(fixture.configFile);
+    await assert.rejects(duplicate.task, /ACCOUNT-ALREADY-RUNNING/u);
+    await worldspeakerChannel.gateway!.stopAccount!({ ...duplicate.context } as never);
+    await assertTaskPending(first.task);
+    await assert.rejects(assertLoopbackPortAvailable(port), { code: 'EADDRINUSE' });
+  } finally {
+    await stopTestAccount(first);
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test('a failed listener start preserves a foreign listener and allows a later clean account run', { timeout: 5_000 }, async () => {
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  const foreign = createServer();
+  await new Promise<void>((resolve, reject) => {
+    foreign.once('error', reject);
+    foreign.listen(port, '127.0.0.1', resolve);
+  });
+  const failed = startTestAccount(fixture.configFile);
+  let recovery: ReturnType<typeof startTestAccount> | undefined;
+  try {
+    await assert.rejects(failed.task, { code: 'EADDRINUSE' });
+    await worldspeakerChannel.gateway!.stopAccount!({ ...failed.context } as never);
+    assert.equal(foreign.listening, true, 'cleanup cannot stop another listener');
+    await new Promise<void>((resolve, reject) => foreign.close((error) => error ? reject(error) : resolve()));
+    recovery = startTestAccount(fixture.configFile);
+    await waitForTestAccount(recovery);
+    await assertTaskPending(recovery.task);
+  } finally {
+    if (recovery) await stopTestAccount(recovery);
+    failed.controller.abort();
+    if (foreign.listening) await new Promise<void>((resolve) => foreign.close(() => resolve()));
+    await rm(fixture.directory, { recursive: true, force: true });
+  }
+});
+
+test('cleanup failure reaches every waiter and keeps new account admission closed', { timeout: 5_000 }, async (t) => {
+  // A distinct module instance keeps this intentionally failed-closed owner out of other tests.
+  const isolated = await import(new URL('../channel.js?cleanup-failure', import.meta.url).href) as typeof import('../channel.js');
+  isolated.setAcknowledgementContextUpdater(async () => {});
+  const port = await unusedLoopbackPort();
+  const fixture = await writeStartupFixture({ port });
+  const expected = new Error('isolated cleanup failure');
+  const originalClose = WorldspeakerTransport.prototype.close;
+  t.mock.method(WorldspeakerTransport.prototype, 'close', async function (this: WorldspeakerTransport) {
+    await originalClose.call(this);
+    throw expected;
+  });
+  const run = startTestAccount(fixture.configFile, new AbortController(), isolated.worldspeakerChannel);
+  try {
+    await waitForTestAccount(run);
+    run.controller.abort();
+    const results = await Promise.allSettled([
+      run.task, isolated.worldspeakerChannel.gateway!.stopAccount!({ ...run.context } as never),
+    ]);
+    for (const result of results) {
+      assert.equal(result.status, 'rejected');
+      if (result.status === 'rejected') assert.strictEqual(result.reason, expected);
+    }
+    const duplicate = startTestAccount(fixture.configFile, new AbortController(), isolated.worldspeakerChannel);
+    await assert.rejects(duplicate.task, /ACCOUNT-ALREADY-RUNNING/u);
+    await assertLoopbackPortAvailable(port);
+  } finally {
+    run.controller.abort();
+    await run.task.catch(() => {});
     await rm(fixture.directory, { recursive: true, force: true });
   }
 });
@@ -774,6 +934,47 @@ async function assertLoopbackPortAvailable(port: number): Promise<void> {
   await new Promise<void>((resolveClose, reject) => {
     server.close((error) => error ? reject(error) : resolveClose());
   });
+}
+
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+function startTestAccount(configFile: string, controller = new AbortController(), channel = worldspeakerChannel) {
+  setAcknowledgementContextUpdater(async () => {});
+  const ready = deferred();
+  const cfg = openclawConfig({ configFile });
+  const statuses: string[] = [];
+  const log = (message: string) => {
+    statuses.push(message);
+    if (message.includes('WS-COMPAT-COMPANION-WAITING-FOR-PEER')) ready.resolve();
+  };
+  const context = {
+    accountId: 'default', account: channel.config.resolveAccount(cfg), cfg,
+    abortSignal: controller.signal, channelRuntime: runtimeSeam(), log: { info: log, warn: log },
+  };
+  const task = Promise.resolve(channel.gateway!.startAccount!(context as never));
+  void task.catch(() => {});
+  return { context, controller, channel, task, ready: ready.promise, statuses };
+}
+
+async function waitForTestAccount(run: ReturnType<typeof startTestAccount>) {
+  await Promise.race([run.ready, run.task.then(() => assert.fail('account ended before listener readiness'))]);
+}
+
+async function assertTaskPending(task: Promise<unknown>) {
+  let settled = false;
+  void task.then(() => { settled = true; }, () => { settled = true; });
+  await nextTurn();
+  assert.equal(settled, false, 'the account task must remain pending while its listener is active');
+}
+
+async function stopTestAccount(run: ReturnType<typeof startTestAccount>) {
+  run.controller.abort();
+  await run.channel.gateway!.stopAccount!({ ...run.context } as never);
+  await run.task;
 }
 
 function accountFor(routeBinding: typeof binding, accountId = 'default') {

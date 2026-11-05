@@ -209,6 +209,7 @@ export class WorldspeakerTransport {
   private peer: Peer | undefined;
   private peerGeneration = 0;
   private stopped = false;
+  private closeTask: Promise<void> | undefined;
   private inboundExceptionDiagnostics = 0;
   private readonly sharedWork: SharedWorkState;
 
@@ -227,6 +228,8 @@ export class WorldspeakerTransport {
   }
 
   async start(): Promise<void> {
+    if (this.stopped) throw new Error('Worldspeaker transport is stopped');
+    if (this.server) throw new Error('Worldspeaker transport is already started');
     if (!this.config.enabled) throw new Error('Worldspeaker channel is disabled');
     if (this.config.bindHost !== '127.0.0.1') throw new Error('this candidate supports a loopback listener only');
     if (this.config.deploymentId !== DEPLOYMENT.deploymentId || this.config.manifestSha256 !== DEPLOYMENT.manifestSha256) {
@@ -964,7 +967,11 @@ export class WorldspeakerTransport {
     if (!this.stopped) this.onStatus('unavailable', unavailableReason);
   }
 
-  async close(): Promise<void> {
+  close(): Promise<void> {
+    return this.closeTask ??= this.closeOwnedResources();
+  }
+
+  private async closeOwnedResources(): Promise<void> {
     this.stopped = true;
     if (this.peer) {
       const peer = this.peer;
