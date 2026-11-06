@@ -19,6 +19,8 @@ been implemented, tested, or qualified against OpenClaw.
   candidate defaults from settled requirements.
 - [The latency baseline](latency-baseline.md) is evidence about the predecessor,
   not a benchmark of Worldspeaker.
+- [Validation scenarios](validation-scenarios.md) define the ordered end-to-end
+  checks, evidence profiles, and headless-client rules that predict a working mod.
 
 An unresolved technical mechanism does not waive a product requirement. If a
 supported integration cannot meet a requirement, report the conflict and obtain
@@ -1057,6 +1059,10 @@ its local positive, negative, and boundary criteria.
 | Invalid configuration, unauthorized staff action, persona-only change | CHAR-02, CHAR-03, ABIL-02, OPS-03 |
 | Load and privacy measurement without full private conversation logging | COMPAT-03, OPS-01, OPS-02, OPS-04, OPS-05 |
 | Independent installation, recovery, and release metadata | DIST-01, DIST-02, DIST-03, DIST-04 |
+
+[Validation scenarios](validation-scenarios.md) turn these into executable
+VS-00 through VS-20 checks. Every result records its evidence profile; a
+local-development run never counts as qualification evidence.
 
 ## Explicit exclusions
 
