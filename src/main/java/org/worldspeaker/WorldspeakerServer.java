@@ -70,7 +70,7 @@ public final class WorldspeakerServer implements ModInitializer {
                 integerSystemProperty("java.specification.version"),
                 System.getProperty("java.vendor", "unknown"),
                 System.getProperty("java.runtime.version", "unknown"));
-        configPath = loader.getConfigDir().resolve("worldspeaker.properties");
+        configPath = loader.getConfigDir().toAbsolutePath().normalize().resolve("worldspeaker.properties");
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> AskCommand.register(dispatcher));
         AttentionListener.register(attentionAccess());
@@ -301,10 +301,17 @@ public final class WorldspeakerServer implements ModInitializer {
         return services;
     }
 
+    public static boolean isOnlineOrLocalDev(MinecraftServer server) {
+        if (server == null) return false;
+        if (server.isOnlineMode()) return true;
+        return Boolean.getBoolean("worldspeaker.localDevelopment") ||
+                "true".equalsIgnoreCase(System.getenv("WORLDSPEAKER_LOCAL_DEVELOPMENT"));
+    }
+
     /** Natural chat is authenticated from the live player object, never from decoration or text. */
     private static InteractionIngress.SourceFacts resolveNaturalSender(MinecraftServer server,
                                                                         ServerPlayerEntity player) {
-        if (server == null || player == null || !server.isOnlineMode() || player.getServer() != server) {
+        if (server == null || player == null || !isOnlineOrLocalDev(server) || player.getServer() != server) {
             return InteractionIngress.SourceFacts.nonPlayer();
         }
         UUID playerId = player.getUuid();
@@ -449,7 +456,7 @@ public final class WorldspeakerServer implements ModInitializer {
         }
 
         var connection = player.networkHandler;
-        boolean onlineMode = server.isOnlineMode();
+        boolean onlineMode = isOnlineOrLocalDev(server);
         boolean currentConnection = connection != null && connection.player == player &&
                 connection.isConnectionOpen() && player.getServer() == server &&
                 server.getPlayerManager().getPlayer(player.getUuid()) == player;
@@ -524,10 +531,13 @@ public final class WorldspeakerServer implements ModInitializer {
     private static void startCompanion(net.minecraft.server.MinecraftServer server, ServerServices services) {
         CompanionConfig config = services.config();
         CompatibilityGate gate = services.gate();
-        if (!isCurrent(services) || config == null || gate == null || gate.snapshot().reasonCode().startsWith("WS-COMPAT-JAVA") ||
+        boolean localDev = Boolean.getBoolean("worldspeaker.localDevelopment") ||
+                "true".equalsIgnoreCase(System.getenv("WORLDSPEAKER_LOCAL_DEVELOPMENT"));
+        if (!isCurrent(services) || config == null || gate == null || (!localDev && (
+                gate.snapshot().reasonCode().startsWith("WS-COMPAT-JAVA") ||
                 gate.snapshot().reasonCode().startsWith("WS-COMPAT-MINECRAFT") ||
                 gate.snapshot().reasonCode().startsWith("WS-COMPAT-LOADER") ||
-                gate.snapshot().reasonCode().startsWith("WS-COMPAT-FABRIC-API")) {
+                gate.snapshot().reasonCode().startsWith("WS-COMPAT-FABRIC-API")))) {
             return;
         }
         BoundCompanionClient companion = new BoundCompanionClient(
@@ -754,7 +764,7 @@ public final class WorldspeakerServer implements ModInitializer {
                     !player.getUuid().equals(source.playerId()) || player.networkHandler != source.connection() ||
                     player.networkHandler.player != player ||
                     !player.networkHandler.isConnectionOpen() || player.getServer() != server || server == null ||
-                    !server.isOnlineMode() ||
+                    !isOnlineOrLocalDev(server) ||
                     server.getPlayerManager().getPlayer(source.playerId()) != player) {
                 return org.worldspeaker.bootstrap.FirstReplyScheduler.PublicationResult.DEFINITELY_UNSENT;
             }
@@ -934,7 +944,7 @@ public final class WorldspeakerServer implements ModInitializer {
                     return FirstReplyScheduler.PublicationResult.DEFINITELY_UNSENT;
                 }
             }
-            if (server == null || !server.isOnlineMode()) return FirstReplyScheduler.PublicationResult.DEFINITELY_UNSENT;
+            if (server == null || !isOnlineOrLocalDev(server)) return FirstReplyScheduler.PublicationResult.DEFINITELY_UNSENT;
             return submitPlayer(source, message, characterMessage, characterDisplayName, characterChatStyle);
         }
 

@@ -880,7 +880,7 @@ public final class SmokeConversation implements AutoCloseable {
 
     private FollowupWindow.Context currentFollowupContext(InteractionIngress.SourceFacts source) {
         if (source == null || !source.authenticatedPlayer() || server == null || config == null || gate == null ||
-                !server.isOnlineMode() || !(source.player() instanceof ServerPlayerEntity player) ||
+                !WorldspeakerServer.isOnlineOrLocalDev(server) || !(source.player() instanceof ServerPlayerEntity player) ||
                 source.playerId() == null || !source.playerId().equals(player.getUuid()) || player.getServer() != server ||
                 server.getPlayerManager().getPlayer(source.playerId()) != player) return null;
         ServerPlayNetworkHandler connection = player.networkHandler;
@@ -1961,7 +1961,7 @@ public final class SmokeConversation implements AutoCloseable {
     }
 
     private InteractionIngress.SourceFacts currentSourceFacts(ServerPlayerEntity player) {
-        if (player == null || player.getServer() != server || !server.isOnlineMode() || player.networkHandler == null ||
+        if (player == null || player.getServer() != server || !WorldspeakerServer.isOnlineOrLocalDev(server) || player.networkHandler == null ||
                 player.networkHandler.player != player || !player.networkHandler.isConnectionOpen() ||
                 server.getPlayerManager().getPlayer(player.getUuid()) != player) return null;
         var profile = player.getGameProfile();
@@ -2497,7 +2497,7 @@ public final class SmokeConversation implements AutoCloseable {
             var profile = player.getGameProfile();
             var world = player.getWorld();
             String worldId = world == null ? null : world.getRegistryKey().getValue().toString();
-            boolean online = server != null && server.isOnlineMode();
+            boolean online = WorldspeakerServer.isOnlineOrLocalDev(server);
             boolean current = server != null && id != null && player.getServer() == server &&
                     server.getPlayerManager().getPlayer(id) == player;
             return new PlayerView(player, connection, id, profile == null ? null : profile.getName(), worldId,
@@ -2525,7 +2525,7 @@ public final class SmokeConversation implements AutoCloseable {
                 UUID profileId = profile == null ? null : profile.getId();
                 ServerPlayNetworkHandler connection = player.networkHandler;
                 ServerWorld world = player.getServerWorld();
-                boolean online = server.isOnlineMode();
+                boolean online = WorldspeakerServer.isOnlineOrLocalDev(server);
                 boolean onThisServer = player.getServer() == server;
                 boolean handlerMatches = connection != null && connection.player == player;
                 boolean connectionOpen = connection != null && connection.isConnectionOpen();
@@ -2568,7 +2568,7 @@ public final class SmokeConversation implements AutoCloseable {
 
         @Override
         public boolean onlineMode() {
-            return server != null && server.isOnlineMode();
+            return WorldspeakerServer.isOnlineOrLocalDev(server);
         }
 
         @Override

@@ -289,10 +289,11 @@ export function validateClientHello(value: unknown, secret: string, binding: Bin
       !isNonce(hello.challenge) || hello.challenge !== expectedChallenge || !isNonce(hello.nonce)) {
     throw new ProtocolRejectionError('handshake identity mismatch');
   }
+  const localDev = process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT === 'true';
   if (hello.deploymentId !== DEPLOYMENT.deploymentId || hello.manifestSha256 !== manifestSha256 ||
       hello.minecraftVersion !== DEPLOYMENT.minecraftVersion || hello.fabricLoaderVersion !== DEPLOYMENT.fabricLoaderVersion ||
       hello.fabricApiVersion !== DEPLOYMENT.fabricApiVersion || hello.javaMajor !== DEPLOYMENT.javaMajor ||
-      hello.javaVendor !== DEPLOYMENT.javaVendor || hello.javaRuntimeVersion !== DEPLOYMENT.javaRuntimeVersion) throw new ProtocolRejectionError('client runtime mismatch');
+      (!localDev && (hello.javaVendor !== DEPLOYMENT.javaVendor || hello.javaRuntimeVersion !== DEPLOYMENT.javaRuntimeVersion))) throw new ProtocolRejectionError('client runtime mismatch');
   if (!sameBinding(hello, binding)) throw new ProtocolRejectionError('binding mismatch');
   if (!verifyProof(secret, clientTranscript(hello), hello.proof)) throw new ProtocolRejectionError('client proof rejected');
   return hello;
