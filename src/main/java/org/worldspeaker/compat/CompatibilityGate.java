@@ -91,13 +91,21 @@ public final class CompatibilityGate {
         return true;
     }
 
+    public static boolean isLocalDevelopmentOverrideRequested() {
+        return Boolean.getBoolean("worldspeaker.localDevelopment") ||
+                "true".equalsIgnoreCase(System.getenv("WORLDSPEAKER_LOCAL_DEVELOPMENT"));
+    }
+
+    public static boolean isLocalDevelopmentOverrideActive() {
+        return "true".equals(DeploymentFacts.LOCAL_DEVELOPMENT_ALLOWED) && isLocalDevelopmentOverrideRequested();
+    }
+
     private String localMismatch(RuntimeFacts facts) {
         if (!DeploymentFacts.MINECRAFT_VERSION.equals(facts.minecraftVersion())) return "WS-COMPAT-MINECRAFT";
         if (!DeploymentFacts.FABRIC_LOADER_VERSION.equals(facts.fabricLoaderVersion())) return "WS-COMPAT-LOADER";
         if (!DeploymentFacts.FABRIC_API_VERSION.equals(facts.fabricApiVersion())) return "WS-COMPAT-FABRIC-API";
         if (Integer.parseInt(DeploymentFacts.JAVA_MAJOR) != facts.javaMajor()) return "WS-COMPAT-JAVA-MAJOR";
-        boolean localDev = Boolean.getBoolean("worldspeaker.localDevelopment") ||
-                "true".equalsIgnoreCase(System.getenv("WORLDSPEAKER_LOCAL_DEVELOPMENT"));
+        boolean localDev = isLocalDevelopmentOverrideActive();
         if (!localDev && (!DeploymentFacts.JAVA_VENDOR.equals(facts.javaVendor()) ||
                 !DeploymentFacts.JAVA_RUNTIME_VERSION.equals(facts.javaRuntimeVersion()))) return "WS-COMPAT-JAVA-BUILD";
         return null;

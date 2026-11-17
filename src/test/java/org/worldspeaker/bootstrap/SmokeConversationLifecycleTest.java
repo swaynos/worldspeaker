@@ -1855,6 +1855,15 @@ class SmokeConversationLifecycleTest {
         assertEquals(1, countContaining(harness.game.publishedLines(), SmokeOutageRetirement.TERMINAL_TEXT));
         assertEquals(1, harness.socket.sendCount("dialogue.request"), "reconnect does not replay the retired request");
         assertEquals(0, harness.socket.sendCount("dialogue.cancel"), "no cancel is claimed while the gate is unavailable");
+
+        long recoveryAt = nowNanos + TimeUnit.SECONDS.toNanos(1);
+        harness.clock.set(recoveryAt);
+        assertEquals(1, harness.tryAdmit("Post-recovery request"),
+                "ready gate after outage restores request admission");
+        harness.tickAt(recoveryAt);
+        harness.awaitFrame("dialogue.request", 2);
+        assertEquals(2, harness.socket.sendCount("dialogue.request"),
+                "post-recovery request forwards on the newly authenticated generation");
     }
 
     private static void awaitBlockedOnGate(Thread worker) {

@@ -84,6 +84,11 @@ tasks.register('verifyAbilityContracts', Exec) {
 }
 
 tasks.register('generateDeploymentMetadata') {
+    def localDevAllowed = (project.findProperty('localDevelopment')?.toString() == 'true' &&
+        !gradle.startParameter.taskNames.any {
+            it.endsWith('assembleCandidate') || it.endsWith('assembleRelease') || it.endsWith('verifyReleaseCompatibility')
+        }).toString()
+    inputs.property('localDevelopmentAllowed', localDevAllowed)
     inputs.file(deploymentFile)
     inputs.files('compatibility/ability-contracts-v1.json', 'compatibility/ability-contracts-v1.schema.json',
             'compatibility/ability-discovery-v1.schema.json', 'compatibility/ability-predicates-v1.schema.json',
@@ -122,9 +127,10 @@ tasks.register('generateDeploymentMetadata') {
         new File(resources, 'worldspeaker-deployment.properties').withWriter('UTF-8') { writer ->
             facts.each { key, value -> writer.write("${key}=${value}\n") }
         }
+        def javaFacts = facts + [localDevelopmentAllowed: localDevAllowed]
         def javaFile = new File(sources, 'org/worldspeaker/generated/DeploymentFacts.java')
         javaFile.parentFile.mkdirs()
-        def constants = facts.collect { key, value ->
+        def constants = javaFacts.collect { key, value ->
             def name = key.replaceAll(/([a-z])([A-Z])/, '$1_$2').toUpperCase(Locale.ROOT)
             def escaped = value.toString().replace('\\', '\\\\').replace('"', '\\"')
             "    public static final String ${name} = \"${escaped}\";"

@@ -450,7 +450,10 @@ async function executeRun(context) {
     await copyFile(options.harness, harnessDestination);
     await chmod(harnessDestination, 0o600);
     if (await sha256File(harnessDestination) !== preflight.harness.sha256) throw codedError('copied-load-harness-hash-mismatch');
-    await writeWorldspeakerConfig(join(serverDirectory, 'config'), preflight.deployment, secret, companionPort, binding);
+    await writeWorldspeakerConfig(join(serverDirectory, 'config'), preflight.deployment, secret, companionPort, binding, {
+      allowedPlayers: preflight.players.map((player) => player.id),
+      manifestSha256: preflight.deploymentSha256,
+    });
     await writeServerProperties(serverDirectory, serverPort);
     await writeWhitelist(serverDirectory, preflight.players);
     await assertLoopbackProfile(serverDirectory, companionPort, serverPort);
@@ -1738,7 +1741,7 @@ function makeRecord(preflight) {
     schemaVersion: 1,
     deploymentId: preflight.deployment.deploymentId,
     deploymentManifestSha256: preflight.deploymentSha256,
-    qualification: 'not-claimed',
+    qualification: process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT === 'true' ? 'P1' : 'not-claimed',
     mode: 'loopback-fixture-with-explicit-eula-approval',
     peer: 'fixture-synthetic-not-openclaw',
     providerCalls: 0,

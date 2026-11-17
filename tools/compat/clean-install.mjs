@@ -66,7 +66,7 @@ export async function runCleanInstall(options, dependencies = {}) {
     manifestRevision: null,
     deploymentManifestSha256: null,
     mode: options.startServer ? 'explicit-eula-approved-runtime-attempt' : 'staging-only',
-    qualification: 'not-claimed',
+    qualification: process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT === 'true' ? 'P1' : 'not-claimed',
     eulaApprovalFlagProvided: options.acceptEula === true,
     eulaFileWritten: false,
     gatewayProcessSpawned: false,
@@ -172,7 +172,7 @@ export async function runCleanInstall(options, dependencies = {}) {
       characterId: `character-${runId.slice(0, 8)}`,
       agentId: 'main',
     };
-    await writeWorldspeakerConfig(dirs.config, manifest, secret, companionPort, binding);
+    const worldspeakerConfig = await writeWorldspeakerConfig(dirs.config, manifest, secret, companionPort, binding, { manifestSha256 });
     await writeInitialOpenClawConfig({
       configPath: join(dirs.openclawState, 'openclaw.json'),
       gatewayPort,
@@ -192,10 +192,7 @@ export async function runCleanInstall(options, dependencies = {}) {
     await configureOpenClaw({
       configPath: join(dirs.openclawState, 'openclaw.json'),
       openclawRoot: hostResult.packageRoot,
-      manifest,
-      manifestSha256,
-      secret,
-      companionPort,
+      bundlePath: worldspeakerConfig.bundlePath,
       gatewayPort,
       binding,
       workspace: join(dirs.openclawState, 'workspace'),
@@ -545,7 +542,7 @@ async function installOpenClaw({ manifest, downloads, candidate, dirs, npm, node
 }
 
 async function installPlugin({ node, cli, packageArchive, cwd, environment, dependencies }) {
-  const install = await runBoundedCommand(node, [cli, 'plugins', 'install', `npm-pack:${packageArchive}`, '--force'], {
+  const install = await runBoundedCommand(node, [cli, 'plugins', 'install', `npm-pack:${packageArchive}`, '--accept-capabilities', '--force'], {
     cwd,
     env: environment,
     timeoutMs: limits.pluginInstallMs,
@@ -566,7 +563,7 @@ async function installPlugin({ node, cli, packageArchive, cwd, environment, depe
   return { installPath: 'openclaw-managed-npm-pack', installExitCode: install.exitCode, runtimeInspection: 'passed' };
 }
 
-async function configureOpenClaw({ configPath, openclawRoot, manifest, manifestSha256, secret, companionPort, gatewayPort, binding, workspace, dependencies }) {
+async function configureOpenClaw({ configPath, openclawRoot, bundlePath, gatewayPort, binding, workspace, dependencies }) {
   const configText = await readFile(configPath, 'utf8').catch(() => '{}');
   let config;
   try {
@@ -584,17 +581,16 @@ async function configureOpenClaw({ configPath, openclawRoot, manifest, manifestS
     ...(config.channels ?? {}),
     worldspeaker: {
       enabled: true,
-      bindHost: '127.0.0.1',
-      port: companionPort,
-      bearerSecret: secret,
-      deploymentId: manifest.deploymentId,
-      manifestSha256,
-      ...binding,
+      configFile: bundlePath,
     },
   };
   config.agents = {
     ...(config.agents ?? {}),
     defaults: { ...(config.agents?.defaults ?? {}), workspace },
+    entries: {
+      ...(config.agents?.entries ?? {}),
+      [binding.agentId]: config.agents?.entries?.[binding.agentId] ?? {},
+    },
   };
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`, { encoding: 'utf8', mode: 0o600 });
   await chmod(configPath, 0o600);
@@ -606,20 +602,55 @@ async function writeInitialOpenClawConfig({ configPath, gatewayPort, workspace }
   await writeFile(configPath, `${JSON.stringify(minimal, null, 2)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
 }
 
-export async function writeWorldspeakerConfig(configDir, manifest, secret, port, binding) {
-  const properties = [
-    `endpoint=ws://127.0.0.1:${port}`,
-    `bearerSecret=${secret}`,
-    `serverId=${binding.serverId}`,
-    `worldId=${binding.worldId}`,
-    `characterId=${binding.characterId}`,
-    `agentId=${binding.agentId}`,
-    'acknowledgementTemplate=Worldspeaker is listening, {player}.',
-  ].join('\n') + '\n';
-  const path = join(configDir, 'worldspeaker.properties');
-  await writeFile(path, properties, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
-  await chmod(path, 0o600);
+export async function writeWorldspeakerConfig(configDir, manifest, secret, port, binding, options = {}) {
   if (manifest.target.selection !== 'selected') throw codedError('deployment-candidate-not-selected');
+  await mkdir(configDir, { recursive: true, mode: 0o700 });
+  await chmod(configDir, 0o700);
+  const realConfigDir = await realpath(configDir);
+  const manifestSha256 = options.manifestSha256 ?? digest('sha256', await readFile(join(root, manifestDefault)));
+  const credentialPath = join(realConfigDir, 'credential.txt');
+  const bundlePath = join(realConfigDir, 'startup.json');
+  const bootstrapPath = join(realConfigDir, 'worldspeaker.properties');
+
+  await writeFile(credentialPath, secret, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+  await chmod(credentialPath, 0o600);
+
+  const bundle = {
+    schemaVersion: 1,
+    binding: {
+      serverId: binding.serverId,
+      worldId: binding.worldId,
+      characterId: binding.characterId,
+      agentId: binding.agentId,
+    },
+    server: {
+      endpoint: `ws://127.0.0.1:${port}`,
+      acknowledgementTemplate: 'Worldspeaker is listening, {player}.',
+      characterDisplayName: 'Archivist',
+      conversationAllowedPlayers: options.allowedPlayers ?? [],
+    },
+    companion: {
+      bindHost: '127.0.0.1',
+      port,
+      deploymentId: manifest.deploymentId,
+      manifestSha256,
+    },
+    abilityPolicy: {
+      schemaVersion: 1,
+      revision: 0,
+      grants: [],
+      denials: [],
+      protection: {},
+    },
+    credentialFile: credentialPath,
+  };
+  await writeFile(bundlePath, `${JSON.stringify(bundle, null, 2)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+  await chmod(bundlePath, 0o600);
+
+  const properties = `schemaVersion=1\nconfigFile=${bundlePath}\n`;
+  await writeFile(bootstrapPath, properties, { encoding: 'utf8', mode: 0o600, flag: 'wx' });
+  await chmod(bootstrapPath, 0o600);
+  return { bootstrapPath, bundlePath, credentialPath };
 }
 
 export async function prepareServerProperties(serverDir, excludedPorts, manifest) {
@@ -658,8 +689,14 @@ export async function inspectRuntime({ manifest, java, node, npm, environment, d
     nodeExitCode: nodeResult.exitCode,
     npmExitCode: npmResult.exitCode,
   };
-  const matches = facts.platform === 'linux/x64' &&
-    facts.javaVendor === manifest.target.java.vendor && facts.javaRuntimeVersion === manifest.target.java.runtimeVersion &&
+  const localDevelopment = (environment?.WORLDSPEAKER_LOCAL_DEVELOPMENT ?? process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT) === 'true';
+  const javaMajorOk = typeof facts.javaRuntimeVersion === 'string' && facts.javaRuntimeVersion.startsWith('21.');
+  const javaOk = localDevelopment
+    ? javaMajorOk
+    : facts.platform === 'linux/x64' &&
+      facts.javaVendor === manifest.target.java.vendor &&
+      facts.javaRuntimeVersion === manifest.target.java.runtimeVersion;
+  const matches = javaOk &&
     facts.selectedNode === manifest.openclaw.node && facts.npm === manifest.openclaw.npm &&
     javaResult.exitCode === 0 && nodeResult.exitCode === 0 && npmResult.exitCode === 0;
   return { facts, matches };
@@ -689,6 +726,7 @@ export function buildIsolatedEnvironment({ openclawHome, openclawState, openclaw
     OPENCLAW_TELEMETRY: '0',
     OPENCLAW_DISABLE_UPDATE_CHECK: '1',
   };
+  if (process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT === 'true') env.WORLDSPEAKER_LOCAL_DEVELOPMENT = 'true';
   if (process.env.SystemRoot) env.SystemRoot = process.env.SystemRoot;
   return env;
 }

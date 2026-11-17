@@ -8,6 +8,13 @@ import { isSafePublicText } from './protocol-text.js';
 const SAFE_METADATA_FLAGS = new Set([
   'isError', 'isReasoning', 'isReasoningSnapshot', 'isCommentary', 'isCompactionNotice',
   'isFallbackNotice', 'isStatusNotice',
+  'replyToTag', 'replyToCurrent', 'audioAsVoice', 'videoAsNote', 'sensitiveMedia', 'trustedLocalMedia',
+]);
+
+const OPTIONAL_UNDEFINED_FIELDS = new Set([
+  'mediaUrl', 'mediaUrls', 'attachments', 'presentation', 'presentationTextMode',
+  'delivery', 'interactive', 'btw', 'location', 'spokenText',
+  'ttsSupplement', 'channelData', 'fallbackText',
 ]);
 
 /** Accepts one complete text-only final and returns the exact safe chat body. */
@@ -22,7 +29,16 @@ export function completedPublicText(payload: ReplyPayload, kind: string): string
   const record = payload as unknown as Record<string, unknown>;
   for (const [key, value] of Object.entries(record)) {
     if (key === 'text') continue;
-    if (!SAFE_METADATA_FLAGS.has(key) || value !== false) return null;
+    if (key === 'replyToId') {
+      if (typeof value !== 'string' && value !== undefined) return null;
+      continue;
+    }
+    if (SAFE_METADATA_FLAGS.has(key)) {
+      if (value !== false && value !== undefined) return null;
+      continue;
+    }
+    if (OPTIONAL_UNDEFINED_FIELDS.has(key) && value === undefined) continue;
+    return null;
   }
   if (typeof record.text !== 'string') return null;
 

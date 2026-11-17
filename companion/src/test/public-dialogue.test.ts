@@ -71,3 +71,26 @@ test('suppresses non-final lanes, errors, private metadata, rich-only output, an
 test('a receipt-only sentence remains text, not a semantic quality pass', () => {
   assert.equal(completedPublicText(payload({ text: 'I heard you.' }), 'final'), 'I heard you.');
 });
+
+test('accepts OpenClaw SDK ReplyPayload shapes with undefined optional fields, replyToId strings, and false flags while still rejecting unknown fields', () => {
+  for (const replyToId of [undefined, '00000000-0000-4000-8000-000000000099']) {
+    assert.equal(
+      completedPublicText(
+        payload({
+          text: 'Greetings Traveler!',
+          mediaUrl: undefined,
+          mediaUrls: undefined,
+          replyToId,
+          replyToCurrent: false,
+          replyToTag: false,
+          audioAsVoice: false,
+        }),
+        'final',
+      ),
+      'Greetings Traveler!',
+    );
+  }
+  assert.equal(completedPublicText(payload({ text: 'answer', replyToId: 123 }), 'final'), null);
+  assert.equal(completedPublicText(payload({ text: 'answer', extra: false }), 'final'), null);
+  assert.equal(completedPublicText(payload({ text: 'answer', extra: undefined }), 'final'), null);
+});

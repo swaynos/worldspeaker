@@ -97,4 +97,21 @@ class CompatibilityGateTest {
         // Availability is independent of caller role; operator status is not an input or bypass.
         assertFalse(AbilityAvailability.isImplemented("anything.operator", 999));
     }
+
+    @Test
+    void localDevelopmentOverrideRelaxationRequiresLocalBuildAllowance() {
+        RuntimeFacts wrongJava = new RuntimeFacts("1.21.1", "0.20.1", "0.116.17+1.21.1", 21,
+                "Eclipse Adoptium", "21.0.3+9-LTS");
+        String previous = System.getProperty("worldspeaker.localDevelopment");
+        try {
+            System.setProperty("worldspeaker.localDevelopment", "true");
+            assertTrue(CompatibilityGate.isLocalDevelopmentOverrideRequested());
+            assertTrue(CompatibilityGate.isLocalDevelopmentOverrideActive());
+            CompatibilityGate gate = new CompatibilityGate(binding());
+            assertEquals("WS-COMPAT-COMPANION-MISSING", gate.checkLocal(wrongJava).reasonCode());
+        } finally {
+            if (previous == null) System.clearProperty("worldspeaker.localDevelopment");
+            else System.setProperty("worldspeaker.localDevelopment", previous);
+        }
+    }
 }

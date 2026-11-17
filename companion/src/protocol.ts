@@ -281,6 +281,21 @@ export function verifyProof(secret: string, transcript: string, proof: string): 
   return expected.length === supplied.length && timingSafeEqual(expected, supplied);
 }
 
+export const LOCAL_DEV_OVERRIDE_WARNING =
+  'WS-LOCAL-DEV-OVERRIDE: local-development override enabled (evidence profile P1; relaxed checks: java.vendor/java.runtime.version, online-mode authentication); never qualifies for P2 or release.';
+export const LOCAL_DEV_OVERRIDE_REFUSED_WARNING =
+  'WS-LOCAL-DEV-OVERRIDE-REFUSED: candidate/release build refuses to honor local-development override (relaxed checks refused: java.vendor/java.runtime.version, online-mode authentication).';
+
+export function isLocalDevelopmentOverrideRequested(): boolean {
+  return process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT === 'true';
+}
+
+export function isLocalDevelopmentOverrideActive(
+  localDevelopmentAllowed: boolean = DEPLOYMENT.localDevelopmentAllowed,
+): boolean {
+  return localDevelopmentAllowed && isLocalDevelopmentOverrideRequested();
+}
+
 export function validateClientHello(value: unknown, secret: string, binding: Binding, manifestSha256: string,
                                    configSetSha256: string, expectedChallenge: string): ClientHello {
   const hello = exactRecord(value, HELLO_FIELDS) as unknown as ClientHello;
@@ -289,7 +304,7 @@ export function validateClientHello(value: unknown, secret: string, binding: Bin
       !isNonce(hello.challenge) || hello.challenge !== expectedChallenge || !isNonce(hello.nonce)) {
     throw new ProtocolRejectionError('handshake identity mismatch');
   }
-  const localDev = process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT === 'true';
+  const localDev = isLocalDevelopmentOverrideActive();
   if (hello.deploymentId !== DEPLOYMENT.deploymentId || hello.manifestSha256 !== manifestSha256 ||
       hello.minecraftVersion !== DEPLOYMENT.minecraftVersion || hello.fabricLoaderVersion !== DEPLOYMENT.fabricLoaderVersion ||
       hello.fabricApiVersion !== DEPLOYMENT.fabricApiVersion || hello.javaMajor !== DEPLOYMENT.javaMajor ||

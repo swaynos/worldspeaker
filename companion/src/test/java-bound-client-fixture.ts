@@ -2,6 +2,12 @@ import { createInterface } from 'node:readline';
 import { loadStartupConfig } from '../startup-config.js';
 import { WorldspeakerTransport } from '../transport.js';
 import { DEPLOYMENT } from '../generated/deployment.js';
+import {
+  isLocalDevelopmentOverrideActive,
+  isLocalDevelopmentOverrideRequested,
+  LOCAL_DEV_OVERRIDE_REFUSED_WARNING,
+  LOCAL_DEV_OVERRIDE_WARNING,
+} from '../protocol.js';
 
 const port = Number(process.argv[2]);
 const bundleFile = process.argv[4];
@@ -122,6 +128,22 @@ internals.receiveFrame = (peer, raw, isBinary) => {
 };
 
 await transport.start();
+if (isLocalDevelopmentOverrideActive()) {
+  emit({
+    kind: 'warning',
+    code: 'WS-LOCAL-DEV-OVERRIDE',
+    profile: 'P1',
+    relaxedChecks: ['java.vendor/java.runtime.version', 'online-mode authentication'],
+    message: LOCAL_DEV_OVERRIDE_WARNING,
+  });
+} else if (isLocalDevelopmentOverrideRequested()) {
+  emit({
+    kind: 'warning',
+    code: 'WS-LOCAL-DEV-OVERRIDE-REFUSED',
+    profile: 'P2',
+    message: LOCAL_DEV_OVERRIDE_REFUSED_WARNING,
+  });
+}
 emit({ kind: 'started', protocol: DEPLOYMENT.protocol });
 const input = createInterface({ input: process.stdin });
 input.on('line', (line) => {

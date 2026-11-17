@@ -304,8 +304,7 @@ public final class WorldspeakerServer implements ModInitializer {
     public static boolean isOnlineOrLocalDev(MinecraftServer server) {
         if (server == null) return false;
         if (server.isOnlineMode()) return true;
-        return Boolean.getBoolean("worldspeaker.localDevelopment") ||
-                "true".equalsIgnoreCase(System.getenv("WORLDSPEAKER_LOCAL_DEVELOPMENT"));
+        return CompatibilityGate.isLocalDevelopmentOverrideActive();
     }
 
     /** Natural chat is authenticated from the live player object, never from decoration or text. */
@@ -399,6 +398,11 @@ public final class WorldspeakerServer implements ModInitializer {
             throw failure;
         }
         activateServices(services);
+        if (CompatibilityGate.isLocalDevelopmentOverrideActive()) {
+            logWarning(services, "WS-LOCAL-DEV-OVERRIDE: local-development override enabled (evidence profile P1; relaxed checks: java.vendor/java.runtime.version, online-mode authentication); never qualifies for P2 or release.");
+        } else if (CompatibilityGate.isLocalDevelopmentOverrideRequested()) {
+            logWarning(services, "WS-LOCAL-DEV-OVERRIDE-REFUSED: candidate/release build refuses to honor local-development override (relaxed checks refused: java.vendor/java.runtime.version, online-mode authentication).");
+        }
         if (!"WS-COMPAT-COMPANION-MISSING".equals(local.reasonCode())) {
             logDiagnostic(services, new CompatibilityDiagnostic(local.reasonCode(), component(local.reasonCode()), "installed", "recorded candidate", "install the exact recorded server/runtime stack and restart"));
         }
@@ -531,8 +535,7 @@ public final class WorldspeakerServer implements ModInitializer {
     private static void startCompanion(net.minecraft.server.MinecraftServer server, ServerServices services) {
         CompanionConfig config = services.config();
         CompatibilityGate gate = services.gate();
-        boolean localDev = Boolean.getBoolean("worldspeaker.localDevelopment") ||
-                "true".equalsIgnoreCase(System.getenv("WORLDSPEAKER_LOCAL_DEVELOPMENT"));
+        boolean localDev = CompatibilityGate.isLocalDevelopmentOverrideActive();
         if (!isCurrent(services) || config == null || gate == null || (!localDev && (
                 gate.snapshot().reasonCode().startsWith("WS-COMPAT-JAVA") ||
                 gate.snapshot().reasonCode().startsWith("WS-COMPAT-MINECRAFT") ||
@@ -954,6 +957,12 @@ public final class WorldspeakerServer implements ModInitializer {
 
     private static void logInfo(ServerServices services, String message) {
         if (!isCurrent(services) || !services.diagnosticIo().tryExecute(() -> LOGGER.info("{}", message))) {
+            // Never block the game thread on logging or run a caller-runs fallback.
+        }
+    }
+
+    private static void logWarning(ServerServices services, String message) {
+        if (!isCurrent(services) || !services.diagnosticIo().tryExecute(() -> LOGGER.warn("{}", message))) {
             // Never block the game thread on logging or run a caller-runs fallback.
         }
     }

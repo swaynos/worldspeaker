@@ -731,9 +731,11 @@ test('pinned SDK ingress refusal is surfaced before context construction or mode
 
 test('the production dispatcher sends only its first complete safe final and ignores later finals', async () => {
   const calls: { contexts: Record<string, any>[]; answers: string[]; targets: string[] } = { contexts: [], answers: [], targets: [] };
+  const receipts: unknown[] = [];
   const runtime = runtimeSeam(calls, async (input) => {
-    await input.dispatcherOptions.deliver({ text: 'I heard you 👩‍🚀.' }, { kind: 'final' });
-    await input.dispatcherOptions.deliver({ text: 'A second answer.' }, { kind: 'final' });
+    receipts.push(await input.dispatcherOptions.deliver({ text: 'Streaming block' }, { kind: 'block' }));
+    receipts.push(await input.dispatcherOptions.deliver({ text: 'I heard you 👩‍🚀.' }, { kind: 'final' }));
+    receipts.push(await input.dispatcherOptions.deliver({ text: 'A second answer.' }, { kind: 'final' }));
   });
 
   await handlePlayerRequest(cfg, account, runtime, request(playerA), (text) => {
@@ -741,6 +743,11 @@ test('the production dispatcher sends only its first complete safe final and ign
     return 'first-final';
   }, () => true, async () => {});
 
+  assert.deepEqual(receipts, [
+    { visibleReplySent: false },
+    { messageIds: ['first-final'], content: 'I heard you 👩‍🚀.', visibleReplySent: true },
+    { visibleReplySent: false },
+  ]);
   assert.deepEqual(calls.answers, ['I heard you 👩‍🚀.']);
   assert.equal(calls.contexts.length, 1);
   assert.deepEqual(calls.targets, [`worldspeaker:${playerA}`]);

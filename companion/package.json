@@ -30,7 +30,7 @@
     "typecheck": "npm run prebuild && tsc -p tsconfig.json --noEmit",
     "test": "npm run build && node ../tools/presets/build-god-preset.mjs --write && node --test dist/test/*.test.js && node --test test/authority-id-schema.test.mjs test/packed-runtime.test.mjs",
     "prepack": "node ../tools/presets/build-god-preset.mjs --write",
-    "pack:candidate": "npm run build && node ../tools/presets/build-god-preset.mjs --write && npm pack --ignore-scripts --pack-destination ."
+    "pack:candidate": "WORLDSPEAKER_CANDIDATE_BUILD=true npm run build && node ../tools/presets/build-god-preset.mjs --write && npm pack --ignore-scripts --pack-destination . && npm run build"
   },
   "files": [
     "dist/",

@@ -224,6 +224,7 @@ public final class SmokeConversation implements AutoCloseable {
         if (stopped) {
             return SubmitOutcome.UNAVAILABLE;
         }
+        observeGateGeneration();
         if (admissionClosed) return SubmitOutcome.UNAVAILABLE;
         if (dispositionBackpressure) {
             if (firstReplyScheduler.pendingDispositionCount() >= FirstReplyScheduler.MAX_DEFERRED_DISPOSITIONS) {
@@ -901,13 +902,18 @@ public final class SmokeConversation implements AutoCloseable {
 
     private void observeGateGeneration() {
         if (gate == null) return;
-        long currentGeneration = gate.snapshot().generation();
+        GateSnapshot snapshot = gate.snapshot();
+        long currentGeneration = snapshot.generation();
         if (currentGeneration != observedGateGeneration) {
             followupWindow.clear();
             if (freshness != null) freshness.clear();
             if (attention != null) attention.clear();
             markAllRequestsObsolete();
             observedGateGeneration = currentGeneration;
+        }
+        if (!unavailableRetirementPending && nextRequestOrder != Long.MAX_VALUE &&
+                snapshot.state() == GateState.READY) {
+            admissionClosed = false;
         }
     }
 

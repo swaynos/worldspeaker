@@ -28,6 +28,7 @@ const values = {
   hostVersion: deployment.openclaw.version,
   nodeVersion: deployment.openclaw.node,
   companionVersion: deployment.companion.version,
+  localDevelopmentAllowed: process.env.WORLDSPEAKER_CANDIDATE_BUILD !== 'true',
 };
 await writeFile(target, `/** Generated from compatibility/deployment.json. */\nexport const DEPLOYMENT = ${JSON.stringify(values, null, 2)} as const;\n`, 'utf8');
 

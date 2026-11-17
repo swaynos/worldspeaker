@@ -6,6 +6,10 @@ import test from 'node:test';
 import {
   clientTranscript,
   createProof,
+  isLocalDevelopmentOverrideActive,
+  isLocalDevelopmentOverrideRequested,
+  LOCAL_DEV_OVERRIDE_REFUSED_WARNING,
+  LOCAL_DEV_OVERRIDE_WARNING,
   serverChallengeTranscript,
   serverTranscript,
   validateClientHello,
@@ -301,6 +305,23 @@ test('acknowledgement and cancellation frames have exact fields and bounded attr
   };
   assert.deepEqual(validateDialogueCancel(cancellation), cancellation);
   assert.throws(() => validateDialogueCancel({ ...cancellation, reason: 'invented authority' }));
+});
+
+test('local-development override names relaxed checks and is refused in candidate/release builds', () => {
+  const previous = process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT;
+  try {
+    process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT = 'true';
+    assert.equal(isLocalDevelopmentOverrideRequested(), true);
+    assert.equal(isLocalDevelopmentOverrideActive(true), true);
+    assert.equal(isLocalDevelopmentOverrideActive(false), false);
+    assert.match(LOCAL_DEV_OVERRIDE_WARNING, /evidence profile P1/);
+    assert.match(LOCAL_DEV_OVERRIDE_WARNING, /java\.vendor\/java\.runtime\.version/);
+    assert.match(LOCAL_DEV_OVERRIDE_WARNING, /online-mode authentication/);
+    assert.match(LOCAL_DEV_OVERRIDE_REFUSED_WARNING, /refuses to honor local-development override/);
+  } finally {
+    if (previous === undefined) delete process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT;
+    else process.env.WORLDSPEAKER_LOCAL_DEVELOPMENT = previous;
+  }
 });
 
 function reverseRecord(record: Record<string, unknown>): Record<string, unknown> {
